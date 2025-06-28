@@ -1,0 +1,72 @@
+---
+title: "AAI1001 Team 7 Project Proposal"
+author:
+  - name: Guo Zi Qiang Robin
+  - name: Chew Tze Han
+  - name: Cheong Wai Hong Jared
+  - name: Akram
+  - name: Gregory Tan
+
+format:
+  html:
+    embed-resources: true
+    theme: lux
+    toc: true 
+---
+
+# Project Proposal
+Please ensure that you have installed these packages in your R environment before running the code chunks below.
+
+```{r, message=FALSE, warning=FALSE, echo=TRUE}
+# Load necessary libraries
+library(tidyverse) # for data manipulation and visualization
+library(metR) # for contour labels
+library(viridis) # for color scales
+library(ggpp) # for position_dodgenudge 
+library(ggrepel) # for text repelling
+library(directlabels) # for categorical text labeling
+library(ggforce) # for enclosing shapes
+```
+
+# Introduction
+Using data engineering and visualisation with various packages in R, we will create a poster that accurately and thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore. To do so we will be using data sourced from [data.gov.sg](https://data.gov.sg/datasets/d_733c6493145ea436f49e9af17a922a58/view){target="blank"} as well as [kaggle](https://www.kaggle.com/datasets/harveytan/singapore-historical-fertility-rate){target="blank"}.
+
+## Analysis of Original Visualisations
+The original visualisations from the Straits Times are shown below,
+
+![Total fertility rate from 2019 to 2023](imgs/total_fertility_rate.png)
+
+![Number of births from 2019 to 2023](imgs/num_births.png)
+Visualisations adapted from *[Straits Times: Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time](https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time){target="_blank"}*
+
+someone explain why we chose dis
+
+## Proposed Improvements
+
+someone exlpain, follow assignment sample
+
+# Data Engineering
+Using the 'tidyverse' package, we will perform data engineering to clean and prepare the data for visualisation. This includes:
+
+- someone write
+
+- somone write
+
+## Data Loading
+
+```{r}
+#| echo: true
+#| eval: true
+employment_details <- read_csv("datasets/ResidentWorkingPersonsAged15YearsandOverbyMonthlyIncomefromWorkNumberofHoursWorkedandSexCensusofPopulation2000.csv")
+
+fertility_by_age <- read_csv("datasets/total_fertility_rate_by_age.csv")
+fertility_by_race <- read_csv("datasets/total_fertility_rate_by_race.csv")
+```
+
+## Cleaning
+
+
+
+
+
+

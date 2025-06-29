@@ -26,6 +26,7 @@ library(ggpp) # for position_dodgenudge
 library(ggrepel) # for text repelling
 library(directlabels) # for categorical text labeling
 library(ggforce) # for enclosing shapes
+library(VIM) # for NA value prediction
 ```
 
 # Introduction
@@ -156,6 +157,94 @@ fertility_age_clean <- fertility_by_age |>
   select(-age_band)
   # 6. drop age_band
 ```
+
+#### Outliers
+Checking for outliers within fertility_by_age dataset using the IQR method. This'll help us identify any extreme values that might skew our analysis. Outliers may be either removed or handled through imputation methods later on.
+```{r}
+
+# Checking for outliers (using IQR)
+
+# IQR calculation
+Q1 <- quantile(fertility_age_clean$value, 0.25, na.rm = TRUE)
+Q3 <- quantile(fertility_age_clean$value, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# Identify outliers
+outliers <- fertility_age_clean %>%
+  filter(value < lower_bound | value > upper_bound) %>%
+  arrange(value)
+
+# Visualise outliers
+ggplot(fertility_age_clean, aes(y = value)) +
+  geom_boxplot(outlier.color = "red", na.rm = TRUE) +
+  labs(title = "Fertility Rate Outliers (IQR Method)", y = "Fertility Rate") +
+  theme_minimal()
+
+print(nrow(outliers))
+```
+#### NA values
+There are a few methods in which we can deal with NA values:
+- complete removal of rows with NA values
+- mean/median imputation
+- predictive imputation (KNN)
+
+```{r}
+
+# Removal of NA values
+
+fertility_by_age_dropped <- na.omit(fertility_age_clean)  # Removes all rows with NAs
+
+colSums(is.na(fertility_by_age_dropped))
+
+# median imputation
+
+fertility_age_medianimputed <- fertility_age_clean |>
+  mutate(births = ifelse(is.na(births), median(births, na.rm = TRUE), births))
+
+colSums(is.na(fertility_age_medianimputed))
+
+# Predictive imputation (using KNN)
+
+fertility_by_age_KNNimputed <- kNN(fertility_age_clean, variable = "births")
+
+colSums(is.na(fertility_by_age_KNNimputed))
+```
+
+```{r}
+
+# Original after dropping NAs
+mean_dropped <- mean(fertility_by_age_dropped$births, na.rm = TRUE)
+median_dropped <- median(fertility_by_age_dropped$births, na.rm = TRUE)
+
+# Median-imputed
+mean_medianimputed <- mean(fertility_age_medianimputed$births, na.rm = TRUE)
+median_medianimputed <- median(fertility_age_medianimputed$births, na.rm = TRUE)
+
+# KNN-imputed
+mean_KNNimputed <- mean(fertility_by_age_KNNimputed$births, na.rm = TRUE)
+median_KNNimputed <- median(fertility_by_age_KNNimputed$births, na.rm = TRUE)
+
+
+comparison <- data.frame(
+  Method = c("Dropped NAs", "Median Imputation", "KNN Imputation"),
+  Mean_Births = c(mean_dropped, mean_medianimputed, mean_KNNimputed),
+  Median_Births = c(median_dropped, median_medianimputed, median_KNNimputed)
+)
+
+print(comparison)
+
+
+```
+Each method has its own advantages and disadvantages:
+- **Complete Removal**: This method is straightforward but can lead to loss of valuable data, of the 420 rows, 20 have na values, a 5% loss of data. Additionally, with how the dataset is structured not being entirely raw data, each row represents a specific age group and year, so removing rows could lead to gaps in the data.
+
+- **Median Imputation**: This method is robust against outliers and preserves the overall distribution of the data. Maintaining all rows keeps the dataset intact, allowing for a more comprehensive analysis. However, it may not capture the underlying patterns as accurately as other methods.
+
+- **KNN Imputation**: This method uses the nearest neighbors to predict missing values, which produces more accurate results than median imputation. Though it is mostly used in machine learning, its use here is substantial in maintaining all rows for a complete dataset with reasonable predictions of missing values. Though, it requires more computational resources and may introduce noise if the data is not well-structured. The former is non consequential as our dataset is small enough, however the same small data means that there is less 'neighbouring' data to predict from, which may lead to less accurate predictions.
+
+All methods have their own benefits and drawbacks. To not tunnel vision ourselves, it may prove beneficial to perform analysis of data with all 3 methods and compare the results to see if they yield similar insights or if one method stands out as more effective for our specific analysis.
 
 ### fertility_by_race
 Original dataset used a different uom than fertility_clean, so we will change the unit of measurement to match fertility_clean. Aditionally, rename `value` to `births` for clarity.

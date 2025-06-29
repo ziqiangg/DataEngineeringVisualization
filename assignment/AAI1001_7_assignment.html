@@ -2451,7 +2451,7 @@ Caused by warning:
 <pre><code>     year     value       uom    births age_group 
         0         0         0         0         0 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># median imputation</span></span>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Median imputation</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>fertility_age_medianimputed <span class="ot">&lt;-</span> fertility_age_clean <span class="sc">|&gt;</span></span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">births =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(births), <span class="fu">median</span>(births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), births))</span>
@@ -2472,26 +2472,25 @@ Caused by warning:
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Original after dropping NAs</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>mean_dropped <span class="ot">&lt;-</span> <span class="fu">mean</span>(fertility_by_age_dropped<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>median_dropped <span class="ot">&lt;-</span> <span class="fu">median</span>(fertility_by_age_dropped<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Median-imputed</span></span>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare the three methods to handle NA values</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>mean_dropped <span class="ot">&lt;-</span> <span class="fu">mean</span>(fertility_by_age_dropped<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>median_dropped <span class="ot">&lt;-</span> <span class="fu">median</span>(fertility_by_age_dropped<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>mean_medianimputed <span class="ot">&lt;-</span> <span class="fu">mean</span>(fertility_age_medianimputed<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>median_medianimputed <span class="ot">&lt;-</span> <span class="fu">median</span>(fertility_age_medianimputed<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="co"># KNN-imputed</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>mean_KNNimputed <span class="ot">&lt;-</span> <span class="fu">mean</span>(fertility_by_age_KNNimputed<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>median_KNNimputed <span class="ot">&lt;-</span> <span class="fu">median</span>(fertility_by_age_KNNimputed<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>mean_KNNimputed <span class="ot">&lt;-</span> <span class="fu">mean</span>(fertility_by_age_KNNimputed<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>median_KNNimputed <span class="ot">&lt;-</span> <span class="fu">median</span>(fertility_by_age_KNNimputed<span class="sc">$</span>births, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method =</span> <span class="fu">c</span>(<span class="st">&quot;Dropped NAs&quot;</span>, <span class="st">&quot;Median Imputation&quot;</span>, <span class="st">&quot;KNN Imputation&quot;</span>),</span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">Mean_Births =</span> <span class="fu">c</span>(mean_dropped, mean_medianimputed, mean_KNNimputed),</span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">Median_Births =</span> <span class="fu">c</span>(median_dropped, median_medianimputed, median_KNNimputed)</span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method =</span> <span class="fu">c</span>(<span class="st">&quot;Dropped NAs&quot;</span>, <span class="st">&quot;Median Imputation&quot;</span>, <span class="st">&quot;KNN Imputation&quot;</span>),</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">Mean_Births =</span> <span class="fu">c</span>(mean_dropped, mean_medianimputed, mean_KNNimputed),</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">Median_Births =</span> <span class="fu">c</span>(median_dropped, median_medianimputed, median_KNNimputed)</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>             Method Mean_Births Median_Births
 1       Dropped NAs    64.43825         42.30
@@ -2499,8 +2498,9 @@ Caused by warning:
 3    KNN Imputation    72.29357         44.75</code></pre>
 </div>
 </div>
-<p>Each method has its own advantages and disadvantages: - <strong>Complete Removal</strong>: This method is straightforward but can lead to loss of valuable data, of the 420 rows, 20 have na values, a 5% loss of data. Additionally, with how the dataset is structured not being entirely raw data, each row represents a specific age group and year, so removing rows could lead to gaps in the data.</p>
+<p>Each method has its own advantages and disadvantages:</p>
 <ul>
+<li><p><strong>Complete Removal</strong>: This method is straightforward but can lead to loss of valuable data, of the 420 rows, 20 have na values, a 5% loss of data. Additionally, with how the dataset is structured not being entirely raw data, each row represents a specific age group and year, so removing rows could lead to gaps in the data.</p></li>
 <li><p><strong>Median Imputation</strong>: This method is robust against outliers and preserves the overall distribution of the data. Maintaining all rows keeps the dataset intact, allowing for a more comprehensive analysis. However, it may not capture the underlying patterns as accurately as other methods.</p></li>
 <li><p><strong>KNN Imputation</strong>: This method uses the nearest neighbors to predict missing values, which produces more accurate results than median imputation. Though it is mostly used in machine learning, its use here is substantial in maintaining all rows for a complete dataset with reasonable predictions of missing values. Though, it requires more computational resources and may introduce noise if the data is not well-structured. The former is non consequential as our dataset is small enough, however the same small data means that there is less ‘neighbouring’ data to predict from, which may lead to less accurate predictions.</p></li>
 </ul>

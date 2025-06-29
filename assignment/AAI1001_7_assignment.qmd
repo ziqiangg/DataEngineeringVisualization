@@ -198,7 +198,7 @@ fertility_by_age_dropped <- na.omit(fertility_age_clean)  # Removes all rows wit
 
 colSums(is.na(fertility_by_age_dropped))
 
-# median imputation
+# Median imputation
 
 fertility_age_medianimputed <- fertility_age_clean |>
   mutate(births = ifelse(is.na(births), median(births, na.rm = TRUE), births))
@@ -214,15 +214,14 @@ colSums(is.na(fertility_by_age_KNNimputed))
 
 ```{r}
 
-# Original after dropping NAs
+# Compare the three methods to handle NA values
+
 mean_dropped <- mean(fertility_by_age_dropped$births, na.rm = TRUE)
 median_dropped <- median(fertility_by_age_dropped$births, na.rm = TRUE)
 
-# Median-imputed
 mean_medianimputed <- mean(fertility_age_medianimputed$births, na.rm = TRUE)
 median_medianimputed <- median(fertility_age_medianimputed$births, na.rm = TRUE)
 
-# KNN-imputed
 mean_KNNimputed <- mean(fertility_by_age_KNNimputed$births, na.rm = TRUE)
 median_KNNimputed <- median(fertility_by_age_KNNimputed$births, na.rm = TRUE)
 
@@ -238,6 +237,7 @@ print(comparison)
 
 ```
 Each method has its own advantages and disadvantages:
+
 - **Complete Removal**: This method is straightforward but can lead to loss of valuable data, of the 420 rows, 20 have na values, a 5% loss of data. Additionally, with how the dataset is structured not being entirely raw data, each row represents a specific age group and year, so removing rows could lead to gaps in the data.
 
 - **Median Imputation**: This method is robust against outliers and preserves the overall distribution of the data. Maintaining all rows keeps the dataset intact, allowing for a more comprehensive analysis. However, it may not capture the underlying patterns as accurately as other methods.

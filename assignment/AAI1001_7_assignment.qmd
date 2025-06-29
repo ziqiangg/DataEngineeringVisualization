@@ -61,9 +61,21 @@ Overall, we aim to present a more balanced viewpoint that shows the economical a
 # Data Engineering
 Using the 'tidyverse' package, we will perform data engineering to clean and prepare the data for visualisation. This includes:
 
-- someone write
+- converting column names to be consistent (eg. lower case and consistent naming for age banding)
 
-- someone write
+- collapse age bands like "15 - 19" and "20 - 24" into Below 30 to match employment_details
+
+- filtering out any anomalies or outliers in the data
+
+- Pivoting from wide to long format for Visualisations
+
+- merging datasets
+
+- ensuring value is numeric
+
+- split variables like "NumberOfHoursWorked_30_34_Females" into separate columns
+
+- standard unit of measurement (uom)
 
 ## Data Loading
 
@@ -77,9 +89,93 @@ fertility_by_race <- read_csv("datasets/total_fertility_rate_by_race.csv")
 ```
 
 ## Cleaning
+There are "na" in the original fertility_by_age dataset these are coerced to NA. IDK what to do with them or if is correct to remove for now i leave
 
-Find outliers and remove anomalies.
+### employment_details
+```{r}
+#| echo: true
+#| eval: true
 
+# drop totals in emp2
+emp2 <- employment_details |> 
+  select(-Total_Total, -Total_Males, -Total_Females)
+
+# pivot emp2 longer and rename age_group to be consistent with fertility datasets
+employment_long <- emp2 |>
+  pivot_longer(
+    cols       = starts_with("NumberOfHoursWorked"),
+    names_to   = c("age_group", "gender"),
+    names_pattern = "NumberOfHoursWorked_([^_]+(?:_[^_]+)?)_(.*)",
+    values_to  = "count"
+  ) |>
+  # normalize labels
+  mutate(
+    gender    = str_to_title(gender),           # “males”→“Males”
+    age_group = str_replace_all(age_group, 
+                  c("Below30" = "Below 30",
+                    "65andOver" = "65+",
+                    "_"       = "-"))
+  ) |>
+  # rename Number for clarity
+  rename(Monthly_Income = Number)
+```
+
+### fertility_by_age
+The original dataset has inconsistent age banding and units of measurement. We will clean the age bands, normalize hyphens, and map them to a unified age group. Additionally, we will rename the `value` column to `births` for clarity.
+```{r}
+#| echo: true
+#| eval: true
+
+
+fertility_age_clean <- fertility_by_age |>
+  # 1. Drop the " Years" suffix and collapse extra whitespace
+  mutate(
+    age_band = str_remove(age_band, " Years"),
+    age_band = str_squish(age_band),
+    # 2. Normalize all hyphens: "15 - 19", "25  - 29" → "15-19", "25-29"
+    age_band = str_replace_all(age_band, "\\s*-\\s*", "-"),
+    births = as.numeric(value) # rename value to births
+  ) |>
+  # 3. Map every age_band into your unified age_group
+  mutate(
+    age_group = case_when(
+      age_band %in% c("15-19", "20-24", "25-29") ~ "Below 30",
+      age_band == "30-34"                         ~ "30-34",
+      age_band == "35-39"                         ~ "35-39",
+      age_band == "40-44"                         ~ "40-44",
+      age_band == "45-49"                         ~ "45-49",
+      TRUE                                        ~ NA_character_
+    )
+  ) |>
+  # 4. Drop any rows that didn’t match
+  filter(!is.na(age_group)) |>
+  # 5. Ensure numeric values (NAs retained)
+  mutate(
+    value = as.numeric(value)
+  ) |>
+  select(-age_band)
+  # 6. drop age_band
+```
+
+### fertility_by_race
+Original dataset used a different uom than fertility_clean, so we will change the unit of measurement to match fertility_clean. Aditionally, rename `value` to `births` for clarity.
+
+```{r}
+#| echo: true
+#| eval: true
+
+# Changing unit of measurement in fertility_by_race from "Per Female" to "Per Thousand Females" to match fertility_clean
+### fertility_by_race
+
+fertility_race_clean <- fertility_by_race |>
+  # 1. Convert to numeric & scale up to per 1,000 females
+  mutate(
+    births = as.numeric(value) * 1000,
+    uom                = "Per Thousand Females"
+  ) |>
+  # 2. Keep only the cleaned columns
+  select(year, race, births, uom)
+```
 
 
 

@@ -39,18 +39,31 @@ The original visualisations from the Straits Times are shown below,
 ![Number of births from 2019 to 2023](imgs/num_births.png)
 Visualisations adapted from *[Straits Times: Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time](https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time){target="_blank"}*
 
-someone explain why we chose dis
+The original visualisations focus on the total fertility rate and the number of births in Singapore from 2019 to 2023. While these visualisations provide a clear overview of the declining fertility trend, they lack depth in exploring the underlying socioeconomic factors that contribute to this trend.
+
+In a more recent article, *[Straits Times: Why the fertility rate doesn’t capture socio-economic or cultural trends](https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends){target="_blank"}*, it critiques the visualizations represented, stating that the first article statistically misrepresented the data to show that single women are having less kids but not accounting for other socioeconomic factors that led to the decline in fertility rate.
 
 ## Proposed Improvements
 
-someone exlpain, follow assignment sample
+These are the improvements that our group have chosen to propose to improve on the first article by including the following dimensions:
+
+1. **Monthly work hours**: To show the relationship between work hours and fertility rates.
+
+2. **Monthly Income**: To show the relationship between income and fertility rates, as well as the impact of economic factors on family planning decisions.
+
+3. **Gender**
+
+4. **Fertility Rate by Year & Age**: To show the fertility rate by age group and year, highlighting trends in fertility across different age demographics.
+
+Overall, we aim to present a more balanced viewpoint that shows the economical and employment burdens of Singaporeans by gender.
+
 
 # Data Engineering
 Using the 'tidyverse' package, we will perform data engineering to clean and prepare the data for visualisation. This includes:
 
 - someone write
 
-- somone write
+- someone write
 
 ## Data Loading
 
@@ -65,6 +78,7 @@ fertility_by_race <- read_csv("datasets/total_fertility_rate_by_race.csv")
 
 ## Cleaning
 
+Find outliers and remove anomalies.
 
 
 

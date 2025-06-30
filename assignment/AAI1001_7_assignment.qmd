@@ -44,6 +44,23 @@ The original visualisations focus on the total fertility rate and the number of 
 
 In a more recent article, *[Straits Times: Why the fertility rate doesn’t capture socio-economic or cultural trends](https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends){target="_blank"}*, it critiques the visualizations represented, stating that the first article statistically misrepresented the data to show that single women are having less kids but not accounting for other socioeconomic factors that led to the decline in fertility rate.
 
+Key Weaknesses:
+
+1. **The visualization implies causality (e.g., being single = lower fertility) without data to back it up.**
+
+2. **It does not account for other socio-economic variables such as income, work stress, cost of living, or gender disparities.**
+
+3. **Lacks clarity in age-group breakdowns and trends across time.**
+
+Strengths:
+
+1. **Clean and clear formatting.**
+
+2. **Good headline-grabbing summary.**
+
+3. **Uses official government data.**
+
+
 ## Proposed Improvements
 
 These are the improvements that our group have chosen to propose to improve on the first article by including the following dimensions:
@@ -52,7 +69,7 @@ These are the improvements that our group have chosen to propose to improve on t
 
 2. **Monthly Income**: To show the relationship between income and fertility rates, as well as the impact of economic factors on family planning decisions.
 
-3. **Gender**
+3. **Gender**: Highlight the differences in fertility and burden by gender.
 
 4. **Fertility Rate by Year & Age**: To show the fertility rate by age group and year, highlighting trends in fertility across different age demographics.
 
@@ -266,6 +283,13 @@ fertility_race_clean <- fertility_by_race |>
   select(year, race, births, uom)
 ```
 
-
+# Planned work distribution for each team member
+| Team Member | Tasks |
+| --- | --- |
+| Guo Zi Qiang Robin | Data cleaning, data engineering, and visualisation |
+| Chew Tze Han | Data cleaning, data engineering, and visualisation |
+| Cheong Wai Hong Jared | Data cleaning, data engineering, and visualisation |
+| Akram | Data cleaning, data engineering, and visualisation |
+| Gregory Tan | Data cleaning, data engineering, and visualisation |
 
 

@@ -75,6 +75,15 @@ These are the improvements that our group have chosen to propose to improve on t
 
 Overall, we aim to present a more balanced viewpoint that shows the economical and employment burdens of Singaporeans by gender.
 
+# Planned work distribution for each team member
+| Team Member | Tasks |
+| --- | --- |
+| Guo Zi Qiang Robin | Data cleaning, data engineering, and visualisation |
+| Chew Tze Han | Data cleaning, data engineering, and visualisation |
+| Cheong Wai Hong Jared | Data cleaning, data engineering, and visualisation |
+| Akram | Data cleaning, data engineering, and visualisation |
+| Gregory Tan | Data cleaning, data engineering, and visualisation |
+
 
 # Data Engineering
 Using the 'tidyverse' package, we will perform data engineering to clean and prepare the data for visualisation. This includes:
@@ -171,8 +180,8 @@ fertility_age_clean <- fertility_by_age |>
   mutate(
     value = as.numeric(value)
   ) |>
-  select(-age_band)
   # 6. drop age_band
+  select(-age_band)
 ```
 
 #### Outliers
@@ -182,25 +191,31 @@ Checking for outliers within fertility_by_age dataset using the IQR method. This
 # Checking for outliers (using IQR)
 
 # IQR calculation
-Q1 <- quantile(fertility_age_clean$value, 0.25, na.rm = TRUE)
-Q3 <- quantile(fertility_age_clean$value, 0.75, na.rm = TRUE)
+Q1 <- quantile(fertility_age_clean$births, 0.25, na.rm = TRUE)
+Q3 <- quantile(fertility_age_clean$births, 0.75, na.rm = TRUE)
 IQR <- Q3 - Q1
 lower_bound <- Q1 - 1.5 * IQR
 upper_bound <- Q3 + 1.5 * IQR
 
 # Identify outliers
 outliers <- fertility_age_clean %>%
-  filter(value < lower_bound | value > upper_bound) %>%
-  arrange(value)
+  filter(births < lower_bound | births > upper_bound) %>%
+  arrange(births)
 
 # Visualise outliers
-ggplot(fertility_age_clean, aes(y = value)) +
+ggplot(fertility_age_clean, aes(x = value)) +
   geom_boxplot(outlier.color = "red", na.rm = TRUE) +
-  labs(title = "Fertility Rate Outliers (IQR Method)", y = "Fertility Rate") +
+  labs(
+    title = "Fertility Rate Outliers (IQR Method)",
+    x = "Fertility Rate (Births Per Thousand Females)"
+  ) +
   theme_minimal()
+
 
 print(nrow(outliers))
 ```
+From the IQR Boxplot, we can conclude that there are 18 observations that are considered outliers above the upper bound of the dataset.
+
 #### NA values
 There are a few methods in which we can deal with NA values:
 - complete removal of rows with NA values
@@ -283,13 +298,5 @@ fertility_race_clean <- fertility_by_race |>
   select(year, race, births, uom)
 ```
 
-# Planned work distribution for each team member
-| Team Member | Tasks |
-| --- | --- |
-| Guo Zi Qiang Robin | Data cleaning, data engineering, and visualisation |
-| Chew Tze Han | Data cleaning, data engineering, and visualisation |
-| Cheong Wai Hong Jared | Data cleaning, data engineering, and visualisation |
-| Akram | Data cleaning, data engineering, and visualisation |
-| Gregory Tan | Data cleaning, data engineering, and visualisation |
 
 

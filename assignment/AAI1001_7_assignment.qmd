@@ -29,6 +29,7 @@ library(directlabels) # for categorical text labeling
 library(ggforce) # for enclosing shapes
 library(VIM) # for NA value prediction
 library(janitor) # for cleaning 
+library(plotly) # for interactive plots
 ```
 
 # Introduction
@@ -103,22 +104,13 @@ Thus, a low fidelity mockup of the final visualisation is shown below:
 
 
 # Data Engineering
-Using the 'tidyverse' package, we will perform data engineering to clean and prepare the data for visualisation. This includes:
+The datasets will be loaded as 3 tibbles: 
 
-- fertility rate data from SingStat is in wide format with years as the columns, we will pivot long for year-wise plots
-
-- fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years up till 2022
-
-- standardise column names across datasets for consistency. For example, fertility dataset will follow "age" from labour force data
-
-- rename age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)'
-
-- filter fertility rate to remove redundant rows (only want fertility rate across age bands)
-
-- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
-
-- add on
-
+| Dataset       | Description                                                                 |
+|---------------|-----------------------------------------------------------------------------|
+| fertility     | Contains metadata which needs to be skipped                                |
+| work          | Includes data on males and females in the labour force and marital status  |
+| not_working   | Includes data on males and females out of the labour force and marital status |
 
 ## Data Loading
 
@@ -129,18 +121,33 @@ Using the 'tidyverse' package, we will perform data engineering to clean and pre
 fertility <- read_csv(
   "datasets/ResidentFertilityRate.csv",
   skip = 9,
-  n_max = 17
+  n_max = 17,
+  show_col_types = FALSE
 )
 
 
-work <- read_csv("datasets/ResidentLabourForceAged15YearsandOverbyMaritalStatusAgeandSex.csv")
-not_working <- read_csv("datasets/ResidentsOutsidetheLabourForceAged15YearsandOverbyMaritalStatusAgeandSex.csv")
+work <- read_csv("datasets/ResidentLabourForceAged15YearsandOverbyMaritalStatusAgeandSex.csv", show_col_types = FALSE)
+not_working <- read_csv("datasets/ResidentsOutsidetheLabourForceAged15YearsandOverbyMaritalStatusAgeandSex.csv", show_col_types = FALSE)
 ```
 
 ## Cleaning
-add stuff
+The tibbles fertility, work, and not_working will be cleaned and engineered for our interactive visualisation of fertility rates.
 
 ### fertility
+The following steps will be taken to clean and reshape fertility:
+
+- fertility tibble contains "na" strings which are not actually NA values, these points will need to be converted to NA values
+
+- fertility rate data from SingStat is in wide format with years as the columns, we will pivot long for year-wise plots
+
+- fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years up till 2022
+
+- standardise age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)'
+
+- filtered to include age specific fertility rates and the total fertility rate by year
+
+- introduce Unit of Measurement (uom) column to indicate scaling for total fertility rates and age banded fertility rates
+
 ```{r}
 #| echo: true
 #| eval: true
@@ -182,13 +189,16 @@ fertility_clean <- fertility |>
       age_band == "All" ~ "per female",
       TRUE              ~ "per thousand females")
   ) |>
+  filter(year <= 2022) |>
   select(year, age_band, fertility_rate = value, uom)
   
 ```
 
 
 ### not_working 
+The following steps will be taken to clean and reshape not_working:
 
+- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
 ### work
 
 

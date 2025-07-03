@@ -3106,7 +3106,12 @@ vertical-align: -.125em;
   <ul class="collapse">
   <li><a href="#fertility" id="toc-fertility" class="nav-link" data-scroll-target="#fertility"><span class="header-section-number">4.2.1</span> fertility</a></li>
   <li><a href="#not_working" id="toc-not_working" class="nav-link" data-scroll-target="#not_working"><span class="header-section-number">4.2.2</span> not_working</a></li>
+  <li><a href="#work" id="toc-work" class="nav-link" data-scroll-target="#work"><span class="header-section-number">4.2.3</span> work</a></li>
   </ul></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">5</span> Conclusion</a>
+  <ul class="collapse">
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">5.1</span> References</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -3201,7 +3206,7 @@ vertical-align: -.125em;
 <li><p><strong>Year</strong>: time series x-axis variable</p></li>
 <li><p><strong>Count (in thousands)</strong>: quantitative y-axis variable that accommodates the unit of measurement from our datasets. Count will represent Births Per Thousand Females and population of Females in the labour force (in thousands)</p></li>
 <li><p><strong>marital status</strong>: categorical variable that will be differentiated by colour and appear as geom_col. There will be 3 marital statuses (single, married, widowed/divorced) that will be represented as separate bars in the visualisation</p></li>
-<li><p><strong>age band</strong>: categorical variable that will be differentiated by colour and appear as geom_line. There will be 7 age bands (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) that will be represented as separate lines in the visualisation</p></li>
+<li><p><strong>age band</strong>: categorical variable that will be differentiated by colour and appear as geom_line. There will be 7 age bands (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) and total fertility rate that will be represented as separate lines in the visualisation</p></li>
 <li><p><strong>labour participation</strong>: categorical variable that is switchable to show separate faceted graphs</p></li>
 </ol>
 <p>We will also consider the additions of other variables such as yearly housing prices or other factors that may affect fertility rate.</p>
@@ -3355,17 +3360,54 @@ vertical-align: -.125em;
 <h3 data-number="4.2.2" class="anchored" data-anchor-id="not_working"><span class="header-section-number">4.2.2</span> not_working</h3>
 <p>The following steps will be taken to clean and reshape not_working:</p>
 <ul>
-<li>for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable ### work</li>
+<li><p>standardise column names to the 7 (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) age bands to be consistent with fertility and remove extra bandings</p></li>
+<li><p>for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable</p></li>
+<li><p>some outside_labour_force values are “-” which are not valid numerics, convert these to NA</p></li>
+<li><p>rename age column to age_band to match fertility</p></li>
+<li><p>aggregate age bands to introduce All to represent population outside labour force by year and marital status only, this is so that we can introduce interactivity with total fertility rate and fertility rates across age bands</p></li>
 </ul>
-<section id="outliers" class="level4" data-number="4.2.2.1">
-<h4 data-number="4.2.2.1" class="anchored" data-anchor-id="outliers"><span class="header-section-number">4.2.2.1</span> Outliers</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean and reshape not_working data</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>not_working_clean <span class="ot">&lt;-</span> not_working <span class="sc">|&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>() <span class="sc">|&gt;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Filter for the 7 age bands only</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(age <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;15-19&quot;</span>, <span class="st">&quot;20-24&quot;</span>, <span class="st">&quot;25-29&quot;</span>, <span class="st">&quot;30-34&quot;</span>, <span class="st">&quot;35-39&quot;</span>, <span class="st">&quot;40-44&quot;</span>, <span class="st">&quot;45-49&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Replace &quot;-&quot; with NA and convert to numeric</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">outside_labour_force =</span> <span class="fu">na_if</span>(outside_labour_force, <span class="st">&quot;-&quot;</span>),</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">outside_labour_force =</span> <span class="fu">as.numeric</span>(outside_labour_force),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">outside_labour_force =</span> outside_labour_force <span class="sc">/</span> <span class="dv">1000</span>,  <span class="co"># Convert to thousands</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_band =</span> age  <span class="co"># Rename for consistency with fertility_clean</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, sex, marital_status, age_band, outside_labour_force)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Create aggregated &quot;All&quot; row by year, sex, and marital_status</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>not_working_all <span class="ot">&lt;-</span> not_working_clean <span class="sc">|&gt;</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, sex, marital_status) <span class="sc">|&gt;</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_band =</span> <span class="st">&quot;All&quot;</span>,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">outside_labour_force =</span> <span class="fu">sum</span>(outside_labour_force, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine original cleaned data with the aggregated &quot;All&quot; row</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>not_working_clean <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(not_working_clean, not_working_all)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
-<section id="na-values" class="level4" data-number="4.2.2.2">
-<h4 data-number="4.2.2.2" class="anchored" data-anchor-id="na-values"><span class="header-section-number">4.2.2.2</span> NA values</h4>
-<p>In the work and not_working datasets, there are NA values which represent that for some combinations of marital status and age groups there are no representation.</p>
-<p>whoever doing this part justify if we need to do something about NA, i believe it is not necessary. These will just not appear as a bar chart in the final visualisation</p>
+<section id="work" class="level3" data-number="4.2.3">
+<h3 data-number="4.2.3" class="anchored" data-anchor-id="work"><span class="header-section-number">4.2.3</span> work</h3>
+<p>whoever is doing this, similar steps as not_working as the data is very similar</p>
+<section id="outliers" class="level4" data-number="4.2.3.1">
+<h4 data-number="4.2.3.1" class="anchored" data-anchor-id="outliers"><span class="header-section-number">4.2.3.1</span> Outliers</h4>
+<p>idk if this is needed</p>
 </section>
 </section>
+</section>
+</section>
+<section id="conclusion" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Conclusion</h1>
+<section id="references" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="references"><span class="header-section-number">5.1</span> References</h2>
 </section>
 </section>
 

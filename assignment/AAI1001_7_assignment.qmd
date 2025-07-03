@@ -82,7 +82,7 @@ The final visualisation that we plan to create will have 5 variables:
 
 3. **marital status**: categorical variable that will be differentiated by colour and appear as geom_col. There will be 3 marital statuses (single, married, widowed/divorced) that will be represented as separate bars in the visualisation
 
-4. **age band**: categorical variable that will be differentiated by colour and appear as geom_line. There will be 7 age bands (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) that will be represented as separate lines in the visualisation
+4. **age band**: categorical variable that will be differentiated by colour and appear as geom_line. There will be 7 age bands (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) and total fertility rate that will be represented as separate lines in the visualisation
 
 5. **labour participation**: categorical variable that is switchable to show separate faceted graphs
 
@@ -198,17 +198,58 @@ fertility_clean <- fertility |>
 ### not_working 
 The following steps will be taken to clean and reshape not_working:
 
-- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
-### work
+- standardise column names to the 7 (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) age bands to be consistent with fertility and remove extra bandings
 
+- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
+
+- some outside_labour_force values are "-" which are not valid numerics, convert these to NA
+
+- rename age column to age_band to match fertility
+
+- aggregate age bands to introduce All to represent population outside labour force by year and marital status only, this is so that we can introduce interactivity with total fertility rate and fertility rates across age bands
+
+
+```{r}
+#| echo: true
+#| eval: true
+
+# Clean and reshape not_working data
+not_working_clean <- not_working |>
+  clean_names() |>
+  # Filter for the 7 age bands only
+  filter(age %in% c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")) |>
+  # Replace "-" with NA and convert to numeric
+  mutate(
+    outside_labour_force = na_if(outside_labour_force, "-"),
+    outside_labour_force = as.numeric(outside_labour_force),
+    outside_labour_force = outside_labour_force / 1000,  # Convert to thousands
+    age_band = age  # Rename for consistency with fertility_clean
+  ) |>
+  select(year, sex, marital_status, age_band, outside_labour_force)
+
+# Create aggregated "All" row by year, sex, and marital_status
+not_working_all <- not_working_clean |>
+  group_by(year, sex, marital_status) |>
+  summarise(
+    age_band = "All",
+    outside_labour_force = sum(outside_labour_force, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Combine original cleaned data with the aggregated "All" row
+not_working_clean <- bind_rows(not_working_clean, not_working_all)
+```
+
+### work
+whoever is doing this, similar steps as not_working as the data is very similar
 
 #### Outliers
+idk if this is needed
 
+# Conclusion
 
-#### NA values
-In the work and not_working datasets, there are NA values which represent that for some combinations of marital status and age groups there are no representation.
+## References
 
-whoever doing this part justify if we need to do something about NA, i believe it is not necessary. These will just not appear as a bar chart in the final visualisation
 
 
 

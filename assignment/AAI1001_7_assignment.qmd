@@ -11,7 +11,8 @@ format:
   html:
     embed-resources: true
     theme: lux
-    toc: true 
+    toc: true
+    number-sections: true
 ---
 
 # Project Proposal

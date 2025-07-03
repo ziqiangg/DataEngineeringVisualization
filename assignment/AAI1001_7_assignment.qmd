@@ -65,7 +65,7 @@ Strengths:
 
 These are the improvements that our group has identified:
 
-1. **Interactive switchability**: To show the difference in trends between women in and out of the workforce.
+1. **Interactivity**: To show the difference in fertility trends between women in and out of the workforce, by age band and marital status. This will allow users to explore the data in a more engaging way and draw their own conclusions.
 
 2. **Age band**: To compare fertility rates across different age groups, allowing for a more nuanced understanding of how age impacts fertility.
 
@@ -165,6 +165,7 @@ fertility_clean <- fertility |>
   # Extract age bands and filter for only age-specific rates
   mutate(
     age_band = case_when(
+      measure == "Total Fertility Rate (TFR) (Per Female)" ~ "All",
       str_detect(measure, "15 - 19") ~ "15-19",
       str_detect(measure, "20 - 24") ~ "20-24",
       str_detect(measure, "25 - 29") ~ "25-29",
@@ -176,7 +177,12 @@ fertility_clean <- fertility |>
     )
   ) |>
   filter(!is.na(age_band)) |>  # Keep only age band rows
-  select(year, age_band, fertility_rate = value)  # Select desired columns
+  mutate(
+    uom = case_when(
+      age_band == "All" ~ "per female",
+      TRUE              ~ "per thousand females")
+  ) |>
+  select(year, age_band, fertility_rate = value, uom)
   
 ```
 

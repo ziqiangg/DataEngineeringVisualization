@@ -3191,7 +3191,7 @@ vertical-align: -.125em;
 <h2 data-number="2.2" class="anchored" data-anchor-id="proposed-improvements"><span class="header-section-number">2.2</span> Proposed Improvements</h2>
 <p>These are the improvements that our group has identified:</p>
 <ol type="1">
-<li><p><strong>Interactive switchability</strong>: To show the difference in trends between women in and out of the workforce.</p></li>
+<li><p><strong>Interactivity</strong>: To show the difference in fertility trends between women in and out of the workforce, by age band and marital status. This will allow users to explore the data in a more engaging way and draw their own conclusions.</p></li>
 <li><p><strong>Age band</strong>: To compare fertility rates across different age groups, allowing for a more nuanced understanding of how age impacts fertility.</p></li>
 <li><p><strong>Marital status</strong>: Shows marriage trends over the years and how they relate to fertility rates, providing insights into the relationship between marital status and fertility.</p></li>
 <li><p><strong>Housing price trends</strong>: To show how housing prices have changed over the years and draw insight into how it will affect fertility rate.</p></li>
@@ -3331,18 +3331,24 @@ dbl (1): year
 <span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Extract age bands and filter for only age-specific rates</span></span>
 <span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
 <span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_band =</span> <span class="fu">case_when</span>(</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;15 - 19&quot;</span>) <span class="sc">~</span> <span class="st">&quot;15-19&quot;</span>,</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;20 - 24&quot;</span>) <span class="sc">~</span> <span class="st">&quot;20-24&quot;</span>,</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;25 - 29&quot;</span>) <span class="sc">~</span> <span class="st">&quot;25-29&quot;</span>,</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;30 - 34&quot;</span>) <span class="sc">~</span> <span class="st">&quot;30-34&quot;</span>,</span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;35 - 39&quot;</span>) <span class="sc">~</span> <span class="st">&quot;35-39&quot;</span>,</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;40 - 44&quot;</span>) <span class="sc">~</span> <span class="st">&quot;40-44&quot;</span>,</span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;45 - 49&quot;</span>) <span class="sc">~</span> <span class="st">&quot;45-49&quot;</span>,</span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age_band)) <span class="sc">|&gt;</span>  <span class="co"># Keep only age band rows</span></span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, age_band, <span class="at">fertility_rate =</span> value)  <span class="co"># Select desired columns</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>      measure <span class="sc">==</span> <span class="st">&quot;Total Fertility Rate (TFR) (Per Female)&quot;</span> <span class="sc">~</span> <span class="st">&quot;All&quot;</span>,</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;15 - 19&quot;</span>) <span class="sc">~</span> <span class="st">&quot;15-19&quot;</span>,</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;20 - 24&quot;</span>) <span class="sc">~</span> <span class="st">&quot;20-24&quot;</span>,</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;25 - 29&quot;</span>) <span class="sc">~</span> <span class="st">&quot;25-29&quot;</span>,</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;30 - 34&quot;</span>) <span class="sc">~</span> <span class="st">&quot;30-34&quot;</span>,</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;35 - 39&quot;</span>) <span class="sc">~</span> <span class="st">&quot;35-39&quot;</span>,</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;40 - 44&quot;</span>) <span class="sc">~</span> <span class="st">&quot;40-44&quot;</span>,</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(measure, <span class="st">&quot;45 - 49&quot;</span>) <span class="sc">~</span> <span class="st">&quot;45-49&quot;</span>,</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age_band)) <span class="sc">|&gt;</span>  <span class="co"># Keep only age band rows</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">uom =</span> <span class="fu">case_when</span>(</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>      age_band <span class="sc">==</span> <span class="st">&quot;All&quot;</span> <span class="sc">~</span> <span class="st">&quot;per female&quot;</span>,</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span>              <span class="sc">~</span> <span class="st">&quot;per thousand females&quot;</span>)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, age_band, <span class="at">fertility_rate =</span> value, uom)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="not_working" class="level3" data-number="4.2.2">

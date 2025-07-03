@@ -10,9 +10,9 @@ author:
 format:
   html:
     embed-resources: true
-    theme: lux
     toc: true
     number-sections: true
+    theme: journal
 ---
 
 # Project Proposal
@@ -39,33 +39,31 @@ The original visualisations from the Straits Times are shown below,
 
 ![Total fertility rate from 2019 to 2023](imgs/total_fertility_rate.png)
 
-![Number of births from 2019 to 2023](imgs/num_births.png)
 Visualisations adapted from *[Straits Times: Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time](https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time){target="_blank"}*
 
-The original visualisations focus on the total fertility rate and the number of births in Singapore from 2019 to 2023. While these visualisations provide a clear overview of the declining fertility trend, they lack depth in exploring the underlying socioeconomic factors that contribute to this trend.
+The original visualisations focused on two variables: Singapore's total fertility rate (quantitative) and years (quantitative) from 2019 to 2023. While these visualisations provide a clear overview of the declining fertility trend, they lack depth in exploring the underlying socioeconomic factors that contribute to this trend.
 
 In a more recent article, *[Straits Times: Why the fertility rate doesn’t capture socio-economic or cultural trends](https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends){target="_blank"}*, it critiques the visualizations represented, stating that the first article statistically misrepresented the data to show that single women are having less kids but not accounting for other socioeconomic factors that led to the decline in fertility rate.
 
 Key Weaknesses:
 
-1. **The visualization implies causality (e.g., being single = lower fertility) without data to back it up.**
+1. The visualization implies causality (e.g., being single = lower fertility) without data to back it up.
 
-2. **It does not account for other socio-economic variables such as trends in workforce participation.**
+2. It does not account for other socioeconomic variables such as trends in workforce participation.
 
-3. **Lacks clarity in age-group breakdowns and trends across time.**
+3. Lacks clarity in age-group breakdowns and trends across time.
 
 Strengths:
 
-1. **Clean and clear formatting.**
+1. Clean and clear formatting.
 
-2. **Good headline-grabbing summary.**
+2. Good headline-grabbing summary.
 
-3. **Uses official government data.**
-
+3. Uses official government data.
 
 ## Proposed Improvements
 
-These are the improvements that our group have chosen to propose to improve on the first article by including the following dimensions:
+These are the improvements that our group has identified:
 
 1. **Interactive switchability**: To show the difference in trends between women in and out of the workforce.
 
@@ -75,7 +73,24 @@ These are the improvements that our group have chosen to propose to improve on t
 
 4. **Housing price trends**: To show how housing prices have changed over the years and draw insight into how it will affect fertility rate.
 
-Overall, we aim to present a more balanced viewpoint that shows the economical and employment burdens of Singaporeans by gender.
+The final visualisation that we plan to create will have 5 variables:
+
+1. **Year**: time series x-axis variable
+
+2. **Count (in thousands)**: quantitative y-axis variable that accommodates the unit of measurement from our datasets. Count will represent Births Per Thousand Females and population of Females in the labour force (in thousands)
+
+3. **marital status**: categorical variable that will be differentiated by colour and appear as geom_col. There will be 3 marital statuses (single, married, widowed/divorced) that will be represented as separate bars in the visualisation
+
+4. **age band**: categorical variable that will be differentiated by colour and appear as geom_line. There will be 7 age bands (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) that will be represented as separate lines in the visualisation
+
+5. **labour participation**: categorical variable that is switchable to show separate faceted graphs
+
+We will also consider the additions of other variables such as yearly housing prices or other factors that may affect fertility rate.
+
+Thus, a low fidelity mockup of the final visualisation is shown below:
+
+![Low fidelity mockup of final visualisation](imgs/planned.png)
+
 
 # Planned work distribution for each team member
 | Team Member | Tasks |
@@ -98,7 +113,11 @@ Using the 'tidyverse' package, we will perform data engineering to clean and pre
 
 - rename age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)'
 
-- filter fertility rate to remove redundant rows
+- filter fertility rate to remove redundant rows (only want fertility rate across age bands)
+
+- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
+
+- add on
 
 
 ## Data Loading

@@ -72,7 +72,7 @@ These are the improvements that our group has identified:
 
 3. **Marital status**: Shows marriage trends over the years and how they relate to fertility rates, providing insights into the relationship between marital status and fertility.
 
-4. **Housing price trends**: To show how housing prices have changed over the years and draw insight into how it will affect fertility rate.
+4. **Female Labour Participation**: To show difference between labour force population
 
 The final visualisation that we plan to create will have 5 variables:
 
@@ -131,16 +131,16 @@ not_working <- read_csv("datasets/ResidentsOutsidetheLabourForceAged15YearsandOv
 ```
 
 ## Cleaning
-The tibbles fertility, work, and not_working will be cleaned and engineered for our interactive visualisation of fertility rates.
+The tibbles "fertility", "work", and "not_working" will be cleaned and engineered for our interactive visualisation of fertility rates.
 
 ### fertility
-The following steps will be taken to clean and reshape fertility:
+The following steps will be taken to clean and reshape "fertility":
 
-- fertility tibble contains "na" strings which are not actually NA values, these points will need to be converted to NA values
+- "fertility" tibble contains "na" strings which are not actually NA values, these points will need to be converted to NA values
 
 - fertility rate data from SingStat is in wide format with years as the columns, we will pivot long for year-wise plots
 
-- fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years up till 2022
+- fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years after 1990 and up till 2022
 
 - standardise age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)'
 
@@ -196,7 +196,7 @@ fertility_clean <- fertility |>
 
 
 ### not_working 
-The following steps will be taken to clean and reshape not_working:
+The following steps will be taken to clean and reshape "not_working":
 
 - standardise column names to the 7 (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) age bands to be consistent with fertility and remove extra bandings
 
@@ -241,7 +241,7 @@ not_working_clean <- bind_rows(not_working_clean, not_working_all)
 ```
 
 ### work
-work tibble is cleaned in a similar way to not_working.
+"work" tibble is cleaned in a similar way to "not_working".
 
 ```{r}
 #| echo: true

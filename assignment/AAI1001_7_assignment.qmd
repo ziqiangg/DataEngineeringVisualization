@@ -405,17 +405,31 @@ not_working_clean_female <- not_working_clean |>
   filter(sex == "female") |> 
   select(-sex)
 
+```
+
+A `full_join()` is used to combine both `work_clean_female` and `not_working_clean_female` tibbles, ensuring that all rows from both tibbles are included to combine the labour force columns. The join is done on the `year`, `marital_status`, and `age_band` columns, common dimensions to both tibbles to prevent any data loss. 
+
+```{r}
 # Combine female labour and not working into one tibble
 labour_status_female <- full_join(
   work_clean_female, 
   not_working_clean_female, 
   by = c("year", "marital_status", "age_band")
 )
+```
+
+A `left_join()` is used joining the `fertility_clean` tibble to the `labour_status_female` tibble, ensuring that all rows from `fertility_clean` are included. This will allow us to combine and be able to associate fertility rates with labour force participation data.
+
+```{r}
 
 # Join to fertility
 fertility_labour_joined_female <- fertility_clean |>
   left_join(labour_status_female, by = c("year", "age_band"))
+```
 
+Conversion of `labour_force` and `outside_labour_force` columns to have a single column dictating labour status. years that do not have corresponding labour force data (1995, 2000, 2005) are filtered out.
+
+```{r}
 # Pivot longer and ensure no sex columns remain
 final <- fertility_labour_joined_female |>
   pivot_longer(
@@ -423,7 +437,12 @@ final <- fertility_labour_joined_female |>
     names_to = "labour_status",
     values_to = "count"
   ) |>
-  filter(!year %in% c(1995, 2000, 2005)) # to deal with missing years in labour force data
+  group_by(year) |>
+  filter(!all(is.na(count))) |> # to deal with missing years in labour force data
+  ungroup()
+
+final |> 
+  slice_sample(n = 5)
 ```
 
 The "final" tibble is ready to be visualised.

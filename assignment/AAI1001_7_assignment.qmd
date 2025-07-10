@@ -27,8 +27,9 @@ library(ggpp) # for position_dodgenudge
 library(ggrepel) # for text repelling
 library(directlabels) # for categorical text labeling
 library(ggforce) # for enclosing shapes
-library(VIM) # for NA value prediction
+library(shiny) # for interactiveness in ggplots
 library(janitor) # for cleaning 
+library(ggplot2) # for plotting
 library(plotly) # for interactive plots
 ```
 
@@ -452,271 +453,134 @@ final |>
 
 # Data Visualisation
 
+
+this uses ggplot which is what we want but uses shiny which does not render in html
 ```{r}
+#| echo: true
+#| eval: true
 
-library(ggplot2)
-library(dplyr)
-
-# Load the data
-df <- read.csv("fertility_labour_analysis.csv")
-
-# Filter out rows with 'All' in age_band
-df_filtered <- df %>% filter(age_band != "All")
-
-# Aggregate count by year, marital_status, and labour_status
-count_data <- df_filtered %>%
-  group_by(year, marital_status, labour_status) %>%
-  summarise(total_count = sum(count, na.rm = TRUE), .groups = 'drop')
-
-# Aggregate fertility_rate by year (average over age bands)
-fertility_data <- df_filtered %>%
-  group_by(year)
-
-# Plot
-ggplot() +
-  geom_col(data = count_data,
-           aes(x = year, y = total_count, fill = interaction(marital_status, labour_status)),
-           position = "dodge", width = 0.7) +
-    geom_line(data = fertility_data,
-            aes(x = year, y = fertility_rate, color = age_band, group = age_band),
-            linewidth = 1.2) +
-  scale_y_continuous(
-    name = "Count (bar)",
-    sec.axis = sec_axis(~./1000, name = "Avg Fertility Rate (line)")
-  ) +
-  labs(
-    x = "Year",
-    title = "Fertility Rate and Labour/Marital Status Count Over Time",
-    fill = "Marital + Labour Status"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "bottom")
-
-
-
-```
-
-```{r}
-
-library(plotly)
-library(dplyr)
-library(readr)
-
-# Load and filter data
-df <- read_csv("fertility_labour_analysis.csv") %>%
-  filter(age_band != "All")
-
-# Prepare fertility data (same for both labour statuses)
-fertility_data <- df %>%
-  select(year, age_band, fertility_rate) %>%
-  distinct()
-
-# Prepare count data separately for each labour_status
-labour_types <- unique(df$labour_status)
-
-# Build traces
-plot_data <- list()
-
-for (labour in labour_types) {
-  count_data <- df %>%
-    filter(labour_status == labour) %>%
-    group_by(year, marital_status) %>%
-    summarise(total_count = sum(count, na.rm = TRUE), .groups = "drop")
-  
-  # Create bar traces per marital_status
-  for (status in unique(count_data$marital_status)) {
-    subset_data <- count_data %>% filter(marital_status == status)
-    plot_data[[length(plot_data) + 1]] <- list(
-      x = subset_data$year,
-      y = subset_data$total_count,
-      type = "bar",
-      name = paste(status, "(", labour, ")"),
-      visible = ifelse(labour == labour_types[1], TRUE, FALSE)
+# UI
+ui <- fluidPage(
+  titlePanel("Fertility and Labour Participation Over Time"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("labour_status", "Select Labour Status:",
+                  choices = unique(final$labour_status),
+                  selected = unique(final$labour_status)[1])
+    ),
+    mainPanel(
+      plotlyOutput("interactive_plot")
     )
-  }
-}
-
-# Add line traces (same for all labour_status)
-for (age in unique(fertility_data$age_band)) {
-  age_data <- fertility_data %>% filter(age_band == age)
-  plot_data[[length(plot_data) + 1]] <- list(
-    x = age_data$year,
-    y = age_data$fertility_rate * 1000,
-    type = "scatter",
-    mode = "lines",
-    name = paste("Fertility -", age),
-    yaxis = "y2",
-    line = list(width = 2),
-    visible = TRUE
-  )
-}
-
-# Create visibility matrix for toggling
-n_marital <- length(unique(df$marital_status))
-visibility_matrix <- lapply(labour_types, function(labour_selected) {
-  v <- rep(FALSE, length(plot_data))
-  # Enable the bar plots for the selected labour status
-  start_index <- (which(labour_types == labour_selected) - 1) * n_marital + 1
-  v[start_index:(start_index + n_marital - 1)] <- TRUE
-  # Always show line plots
-  v[(length(plot_data) - length(unique(fertility_data$age_band)) + 1):length(plot_data)] <- TRUE
-  return(v)
-})
-
-# Dropdown menu
-dropdown <- list(
-  list(
-    buttons = lapply(seq_along(labour_types), function(i) {
-      list(
-        method = "restyle",
-        args = list("visible", visibility_matrix[[i]]),
-        label = labour_types[i]
-      )
-    }),
-    direction = "down",
-    showactive = TRUE,
-    x = 0.1,
-    y = 1.15,
-    xanchor = "left",
-    yanchor = "top"
   )
 )
 
-# Final plot
-fig <- plot_ly()
+# Server
+server <- function(input, output) {
+  output$interactive_plot <- renderPlotly({
+    filtered_data <- final |>
+      filter(age_band != "All", labour_status == input$labour_status)
 
-for (trace in plot_data) {
-  fig <- fig %>% add_trace(
-    x = trace$x,
-    y = trace$y,
-    type = trace$type,
-    mode = trace$mode,
-    name = trace$name,
-    visible = trace$visible,
-    yaxis = trace$yaxis %||% "y"
-  )
-}
+    p <- ggplot(filtered_data, aes(x = year)) +
+      geom_col(aes(y = count, fill = marital_status), position = "dodge", alpha = 0.7) +
+      geom_line(aes(y = fertility_rate, color = age_band, group = age_band), linewidth = 0.5) +
+      scale_fill_brewer(palette = "Set2") +
+      scale_color_viridis_d(option = "D") +
+      labs(
+        title = paste("Fertility Rate and", gsub("_", " ", input$labour_status)),
+        x = "Year",
+        y = "Labour Count (Bar) & Fertility Rate ",
+        fill = "Marital Status",
+        color = "Age Band"
+      ) +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        plot.title = element_text(face = "bold", hjust = 0.5)
+      )
 
-fig <- fig %>%
-  layout(
-    title = "Fertility Rate and Count by Marital Status Over Time",
-    xaxis = list(title = "Year"),
-    yaxis = list(title = "Count (Bar)"),
-    yaxis2 = list(title = "Fertility Rate", overlaying = "y", side = "right"),
-    updatemenus = dropdown,
-    barmode = "group",
-    legend = list(orientation = "h", y = -0.3)
-  )
-
-fig
-
-
-```
-```{r}
-
-library(ggplot2)
-library(dplyr)
-library(plotly)
-library(readr)
-
-# Load and clean data
-df <- read_csv("fertility_labour_analysis.csv") %>%
-  filter(age_band != "All")
-
-# Prepare base fertility data (used in both views)
-fertility_data <- df %>%
-  select(year, age_band, fertility_rate) %>%
-  distinct()
-
-# Create two ggplot objects for each labour_status
-plot_list <- list()
-
-labour_statuses <- unique(df$labour_status)
-
-for (status in labour_statuses) {
-  # Filter by labour_status
-  df_status <- df %>% filter(labour_status == status)
-  
-  # Count data by marital_status
-  count_data <- df_status %>%
-    group_by(year, marital_status) %>%
-    summarise(total_count = sum(count), .groups = "drop")
-  
-  # Fertility lines (same)
-  fertility_plot_data <- fertility_data
-  
-  # Construct ggplot
-  p <- ggplot() +
-    geom_col(data = count_data,
-             aes(x = year, y = total_count, fill = marital_status),
-             position = position_dodge(width = 0.7), width = 0.6) +
-    geom_line(data = fertility_plot_data,
-              aes(x = year, y = fertility_rate, color = age_band, group = age_band),
-              linewidth = 0.5) +
-    scale_y_continuous(
-      name = "Labour Count (Bar)",
-      sec.axis = sec_axis(~./1000, name = "Fertility Rate (Line)")
-    ) +
-    labs(
-      title = paste("Fertility Rate and Labour Count —", gsub("_", " ", status)),
-      x = "Year", fill = "Marital Status", color = "Age Band"
-    ) +
-    theme_minimal() +
-    theme(
-      legend.position = "bottom",
-      plot.title = element_text(face = "bold", size = 16)
-    )
-  
-  plot_list[[status]] <- ggplotly(p)
-}
-
-# Extract plot traces and create toggle
-combined_plot <- subplot(plot_list[[1]])  # use first as starting point
-
-# Build visibility toggles (plotly layers)
-for (i in seq_along(plot_list)) {
-  visible_layers <- rep(FALSE, length(plot_list[[1]]$x$data))
-  if (i == 1) {
-    visible_layers <- rep(TRUE, length(plot_list[[1]]$x$data))
-  }
-  plot_list[[i]]$x$data <- lapply(plot_list[[i]]$x$data, function(layer) {
-    layer$visible <- NULL
-    layer
+    ggplotly(p, tooltip = c("year", "count", "fertility_rate", "marital_status", "age_band")) |>
+      layout(legend = list(orientation = "h", x = 0.1, y = -0.2))
   })
 }
 
-# Combine traces manually
-all_traces <- do.call(c, lapply(plot_list, function(p) p$x$data))
-combined_plot$x$data <- all_traces
+# Run the app
+shinyApp(ui = ui, server = server)
+```
 
-# Clean up legend names and suppress legend only for second group onward
-combined_plot$x$data <- lapply(seq_along(all_traces), function(i) {
-  trace <- all_traces[[i]]
-  
-  # Clean name
-  if (!is.null(trace$name)) {
-    trace$name <- gsub("\\(?(.*?),\\s?1\\)?", "\\1", trace$name)
-  }
-  
-  # Show legend only for the first group (e.g., labour_force)
-  if (i > n_layers) {
-    trace$showlegend <- FALSE
-  } else {
-    trace$showlegend <- TRUE
-  }
-  
-  trace
-})
+this does not use ggplot and uses plotly which is not what we were taught but it renders in html
+```{r}
+#| echo: true
+#| eval: true
+# Prepare fertility data
+fertility_data <- final |>
+  filter(age_band != "All") |>
+  select(year, age_band, fertility_rate) |>
+  distinct()
 
-# Setup visibility list
-n_layers <- length(plot_list[[1]]$x$data)
-visibility_matrix <- lapply(seq_along(plot_list), function(i) {
-  vis <- rep(FALSE, length(all_traces))
-  vis[((i - 1) * n_layers + 1):(i * n_layers)] <- TRUE
+labour_statuses <- unique(final$labour_status)
+age_bands <- unique(fertility_data$age_band)
+colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
+
+trace_list <- list()
+
+for (i in seq_along(labour_statuses)) {
+  status <- labour_statuses[i]
+  final_status <- final |> filter(labour_status == status)
+
+  # Bar traces by marital status
+  count_data <- final_status |>
+    group_by(year, marital_status) |>
+    summarise(count = sum(count), .groups = "drop")
+
+  for (m in unique(count_data$marital_status)) {
+    sub_bar <- count_data |> filter(marital_status == m)
+
+    trace_list[[length(trace_list) + 1]] <- list(
+      x = sub_bar$year,
+      y = sub_bar$count,
+      type = "bar",
+      name = m,
+      marker = list(opacity = 0.7),
+      visible = (i == 1),
+      legendgroup = m,
+      showlegend = TRUE  # ← ALWAYS show legend
+    )
+  }
+
+  # Line traces by age_band
+  for (k in seq_along(age_bands)) {
+    a <- age_bands[k]
+    sub_line <- fertility_data |> filter(age_band == a)
+
+    trace_list[[length(trace_list) + 1]] <- list(
+      x = sub_line$year,
+      y = sub_line$fertility_rate * 1000,  # Scale for y2
+      type = "scatter",
+      mode = "lines",
+      name = a,
+      line = list(color = colors[k], width = 2),
+      yaxis = "y2",
+      visible = (i == 1),
+      legendgroup = a,
+      showlegend = TRUE  # ← ALWAYS show legend
+    )
+  }
+}
+
+# Create base plot
+combined_plot <- plot_ly()
+combined_plot$x$data <- trace_list
+
+# Visibility logic
+n_per_status <- length(trace_list) / length(labour_statuses)
+visibility_matrix <- lapply(seq_along(labour_statuses), function(i) {
+  vis <- rep(FALSE, length(trace_list))
+  vis[((i - 1) * n_per_status + 1):(i * n_per_status)] <- TRUE
   vis
 })
 
-# Add dropdown for toggle
+# Dropdown menu
 dropdown <- list(
   list(
     buttons = lapply(seq_along(labour_statuses), function(i) {
@@ -728,26 +592,30 @@ dropdown <- list(
     }),
     direction = "down",
     x = 0.02,
-    y = 1.1,
+    y = 1.15,
     showactive = TRUE
   )
 )
 
 # Final layout
-combined_plot <- combined_plot %>%
+combined_plot <- combined_plot |>
   layout(
     updatemenus = dropdown,
+    barmode = "group",
     title = list(text = "<b>Fertility Rate and Labour/Marital Status Over Time</b>"),
-    legend = list(orientation = "h", y = -0.3),
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "Labour Count (Bar)"),
+    yaxis2 = list(
+      overlaying = "y", side = "right",
+      title = "Fertility Rate (Line)"
+    ),
+    legend = list(orientation = "h", y = -0.25),
     margin = list(t = 80)
   )
 
 combined_plot
-
-
-
 ```
-The "final" tibble is ready to be visualised.
+
 
 # References {#references}
 Data.gov.sg. (n.d.-a). data.gov.sg. [https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e19478b30d8f5cd6a1dc482bf2e46eb7](https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e19478b30d8f5cd6a1dc482bf2e46eb7){target="_blank"}

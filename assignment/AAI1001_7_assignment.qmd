@@ -21,16 +21,21 @@ Please ensure that you have installed these packages in your R environment befor
 ```{r, message=FALSE, warning=FALSE, echo=TRUE}
 # Load necessary libraries
 library(tidyverse) # for data manipulation and visualization
-library(metR) # for contour labels
 library(viridis) # for color scales
 library(ggpp) # for position_dodgenudge 
 library(ggrepel) # for text repelling
 library(directlabels) # for categorical text labeling
 library(ggforce) # for enclosing shapes
-library(shiny) # for interactiveness in ggplots
 library(janitor) # for cleaning 
 library(ggplot2) # for plotting
 library(plotly) # for interactive plots
+library(tools) # 
+library(ggiraph)
+library(RColorBrewer) # color palettes specifically tailored for data visualization
+library(crosstalk)
+library(htmltools)
+library(dplyr)
+
 ```
 
 # Introduction
@@ -45,15 +50,16 @@ Visualisations adapted from *[Straits Times: Singapore’s total fertility rate 
 
 The original visualisations focused on two variables: Singapore's total fertility rate (quantitative) and years (quantitative) from 2019 to 2023. While these visualisations provide a clear overview of the declining fertility trend, they lack depth in exploring the underlying socioeconomic factors that contribute to this trend.
 
-In a more recent article, *[Straits Times: Why the fertility rate doesn’t capture socio-economic or cultural trends](#references)*, it critiques the visualizations represented, stating that the first article statistically misrepresented the data to show that single women are having less kids but not accounting for other socioeconomic factors that led to the decline in fertility rate.
+In a more recent article, *[Straits Times: Why the fertility rate doesn’t capture socio-economic or cultural trends](#references)*, it critiques the visualizations represented, stating that the first article does not aptly consider socioeconmic and cultural factors which result in increasing singlehood among both men and women which has consequently led to a decline in marital fertility rates.
+
 
 Key Weaknesses:
 
-1. The visualization implies causality (e.g., being single = lower fertility) without data to back it up.
+1. As per the response article, socioeconomic and cultural factors that influenced rising singlehood in Singapore were not considered.
 
-2. It does not account for other socioeconomic variables such as trends in workforce participation.
+2. Only Total Fertility Rate was used in the original article, this does not give insight into the fertility rates of different age groups
 
-3. Lacks clarity in age-group breakdowns and trends across time.
+3. The graph presented in the article only displays 2019 to 2023, which does not provide a comprehensive view of the fertility trends over a longer period.
 
 Strengths:
 
@@ -65,15 +71,13 @@ Strengths:
 
 ## Proposed Improvements
 
-These are the improvements that our group has identified:
+These are the corresponding improvements that our group has identified:
 
-1. **Interactivity**: To show the difference in fertility trends between women in and out of the workforce, by age band and marital status. This will allow users to explore the data in a more engaging way and draw their own conclusions.
+1. **Female Labour Participation & Marital Status**: To show the difference in fertility trends between women in and out of the workforce, and by marital status.
 
 2. **Age band**: To compare fertility rates across different age groups, allowing for a more nuanced understanding of how age impacts fertility.
 
-3. **Marital status**: Shows marriage trends over the years and how they relate to fertility rates, providing insights into the relationship between marital status and fertility.
-
-4. **Female Labour Participation**: To show difference between labour force population
+3. **Interactive time period selection**: Using data from 1990 to 2022, we will create an interactive visualisation that allows users to select different time periods/intervals, as well as different age bands and marital statuses to explore how these factors influence fertility rates over time.
 
 The final visualisation that we plan to create will have 5 variables:
 
@@ -97,11 +101,11 @@ Thus, a low fidelity mockup of the final visualisation is shown below:
 # Planned work distribution for each team member
 | Team Member | Tasks |
 | --- | --- |
-| Guo Zi Qiang Robin | Data cleaning, data engineering, and visualisation |
-| Chew Tze Han | Data cleaning, data engineering, and visualisation |
-| Cheong Wai Hong Jared | Data cleaning, data engineering, and visualisation |
-| Akram | Data cleaning, data engineering, and visualisation |
-| Gregory Tan | Data cleaning, data engineering, and visualisation |
+| Guo Zi Qiang Robin | Data cleaning & data engineering for proposal submission |
+| Chew Tze Han | pls ownself insert what u did |
+| Cheong Wai Hong Jared | pls ownself insert what u did |
+| Akram | pls ownself insert what u did |
+| Gregory Tan | pls ownself insert what u did |
 
 
 # Data Engineering
@@ -445,176 +449,111 @@ final <- fertility_labour_joined_female |>
 
   
 
-final |> 
-  slice_sample(n = 5)
+glimpse(final)
+
+summary(final)
+
+sum(is.na(final$year))
+sum(is.na(final$age_band))
+sum(is.na(final$fertility_rate))
+sum(is.na(final$uom))
+sum(is.na(final$marital_status))
+sum(is.na(final$labour_status))
+sum(is.na(final$count))
+
+unique(final$marital_status)
+unique(final$age_band)
+unique(final$labour_status)
 
 ```
 
 
 # Data Visualisation
 
-
-this uses ggplot which is what we want but uses shiny which does not render in html
 ```{r}
 #| echo: true
 #| eval: true
 
-# UI
-ui <- fluidPage(
-  titlePanel("Fertility and Labour Participation Over Time"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("labour_status", "Select Labour Status:",
-                  choices = unique(final$labour_status),
-                  selected = unique(final$labour_status)[1])
-    ),
-    mainPanel(
-      plotlyOutput("interactive_plot")
-    )
+final_cleaned <- final %>%
+  mutate(
+    labour_status_label = tools::toTitleCase(gsub("_", " ", labour_status))
   )
+
+# aggregate counts so there is only one value per year × marital_status × labour_status
+agg_counts <- final_cleaned %>%
+  group_by(year, marital_status, labour_status_label) %>%
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
+
+# SharedData on the aggregated counts (so the dropdown filters the bars)
+shared_counts <- SharedData$new(agg_counts, group = "labour_status_selection")
+
+## 2. Filter widget
+filter_widget <- filter_select(
+  id = "labour_status_filter",
+  label = "Select Labour Status:",
+  sharedData = shared_counts,
+  group = ~labour_status_label
 )
 
-# Server
-server <- function(input, output) {
-  output$interactive_plot <- renderPlotly({
-    filtered_data <- final |>
-      filter(age_band != "All", labour_status == input$labour_status)
+## 3. Build the plot
 
-    p <- ggplot(filtered_data, aes(x = year)) +
-      geom_col(aes(y = count, fill = marital_status), position = "dodge", alpha = 0.7) +
-      geom_line(aes(y = fertility_rate, color = age_band, group = age_band), linewidth = 0.5) +
-      scale_fill_brewer(palette = "Set2") +
-      scale_color_viridis_d(option = "D") +
-      labs(
-        title = paste("Fertility Rate and", gsub("_", " ", input$labour_status)),
-        x = "Year",
-        y = "Labour Count (Bar) & Fertility Rate ",
-        fill = "Marital Status",
-        color = "Age Band"
-      ) +
-      theme_minimal(base_size = 12) +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = "bottom",
-        plot.title = element_text(face = "bold", hjust = 0.5)
-      )
+# compute scaling factor
+max_count     <- max(agg_counts$count,             na.rm = TRUE)
+max_fertility <- max(final_cleaned$fertility_rate, na.rm = TRUE)
+scale_factor  <- if (max_fertility>0) (max_count * 0.5)/max_fertility else 1
 
-    ggplotly(p, tooltip = c("year", "count", "fertility_rate", "marital_status", "age_band")) |>
-      layout(legend = list(orientation = "h", x = 0.1, y = -0.2))
-  })
-}
-
-# Run the app
-shinyApp(ui = ui, server = server)
-```
-
-this does not use ggplot and uses plotly which is not what we were taught but it renders in html
-```{r}
-#| echo: true
-#| eval: true
-# Prepare fertility data
-fertility_data <- final |>
-  filter(age_band != "All") |>
-  select(year, age_band, fertility_rate) |>
-  distinct()
-
-labour_statuses <- unique(final$labour_status)
-age_bands <- unique(fertility_data$age_band)
-colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
-
-trace_list <- list()
-
-for (i in seq_along(labour_statuses)) {
-  status <- labour_statuses[i]
-  final_status <- final |> filter(labour_status == status)
-
-  # Bar traces by marital status
-  count_data <- final_status |>
-    group_by(year, marital_status) |>
-    summarise(count = sum(count), .groups = "drop")
-
-  for (m in unique(count_data$marital_status)) {
-    sub_bar <- count_data |> filter(marital_status == m)
-
-    trace_list[[length(trace_list) + 1]] <- list(
-      x = sub_bar$year,
-      y = sub_bar$count,
-      type = "bar",
-      name = m,
-      marker = list(opacity = 0.7),
-      visible = (i == 1),
-      legendgroup = m,
-      showlegend = TRUE  # ← ALWAYS show legend
-    )
-  }
-
-  # Line traces by age_band
-  for (k in seq_along(age_bands)) {
-    a <- age_bands[k]
-    sub_line <- fertility_data |> filter(age_band == a)
-
-    trace_list[[length(trace_list) + 1]] <- list(
-      x = sub_line$year,
-      y = sub_line$fertility_rate * 1000,  # Scale for y2
-      type = "scatter",
-      mode = "lines",
-      name = a,
-      line = list(color = colors[k], width = 2),
-      yaxis = "y2",
-      visible = (i == 1),
-      legendgroup = a,
-      showlegend = TRUE  # ← ALWAYS show legend
-    )
-  }
-}
-
-# Create base plot
-combined_plot <- plot_ly()
-combined_plot$x$data <- trace_list
-
-# Visibility logic
-n_per_status <- length(trace_list) / length(labour_statuses)
-visibility_matrix <- lapply(seq_along(labour_statuses), function(i) {
-  vis <- rep(FALSE, length(trace_list))
-  vis[((i - 1) * n_per_status + 1):(i * n_per_status)] <- TRUE
-  vis
-})
-
-# Dropdown menu
-dropdown <- list(
-  list(
-    buttons = lapply(seq_along(labour_statuses), function(i) {
-      list(
-        method = "restyle",
-        args = list("visible", visibility_matrix[[i]]),
-        label = tools::toTitleCase(gsub("_", " ", labour_statuses[i]))
-      )
-    }),
-    direction = "down",
-    x = 0.02,
-    y = 1.15,
-    showactive = TRUE
+p <- ggplot() +
+  # Bars: use the aggregated, shared data
+  geom_col(
+    data = shared_counts,
+    aes(x = year, y = count, fill = marital_status, text = paste("Count:", count)),
+    position = position_dodge(preserve = "single")
+  ) +
+  # Lines: use the original, detailed fertility data
+  geom_line(
+    data = final_cleaned %>% filter(age_band != "All"),
+    aes(x = year, y = fertility_rate * scale_factor, color = age_band, group = age_band),
+    linewidth = 0.5
+  ) +
+  scale_y_continuous(
+    name     = "Labour Count (bars)",
+    sec.axis = sec_axis(~ . / scale_factor, name = "Fertility Rate (lines)")
+  ) +
+  scale_fill_brewer(
+    palette = "Pastel1",
+    name    = "Marital Status:",
+    labels  = ~tools::toTitleCase(gsub("_", " ", .x))
+  ) +
+  scale_color_brewer(
+    palette = "Set2",
+    name    = "Age Band (fertility):"
+  ) +
+  labs(
+    title    = "Fertility Rate and Labour Status Over Time",
+    subtitle = "Use the dropdown to switch between labour‑force vs outside‑labour‑force",
+    x        = "Year"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold")
   )
-)
 
-# Final layout
-combined_plot <- combined_plot |>
+## 4. Convert to Plotly and arrange with the widget
+
+interactive_plot <- ggplotly(p, tooltip = c("x","fill","text")) %>%
   layout(
-    updatemenus = dropdown,
-    barmode = "group",
-    title = list(text = "<b>Fertility Rate and Labour/Marital Status Over Time</b>"),
-    xaxis = list(title = "Year"),
-    yaxis = list(title = "Labour Count (Bar)"),
-    yaxis2 = list(
-      overlaying = "y", side = "right",
-      title = "Fertility Rate (Line)"
-    ),
-    legend = list(orientation = "h", y = -0.25),
-    margin = list(t = 80)
+    legend = list(orientation="h", xanchor="center", x=0.5, y=-0.2),
+    margin = list(b=100)
   )
 
-combined_plot
+tagList(
+  filter_widget,
+  interactive_plot
+)
 ```
+
+
 
 
 # References {#references}

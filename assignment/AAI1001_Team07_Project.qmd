@@ -78,7 +78,7 @@ Singapore's total fertility rate has plummeted to historic lows, dropping below 
 
 ## Background & Significance
 
-Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that traditional visualisations miss. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from [SingStat](#references) as well as labour participation and marital status data from [data.gov.sg](#references). 
+Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that visualisations from [Straits Times](#references) neglect. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from [SingStat](#references) as well as labour participation and marital status data from [data.gov.sg](#references). 
 
 **Disclaimer:**
 *To note that data for 1995, 2000 and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years due to the conduct of the Population Census 2000, General Household Surveys 1995 and 2005 by the Singapore Department of Statistics.*
@@ -134,12 +134,12 @@ analysis_df <- data.frame(
 
 kable(analysis_df, 
       caption = "Comprehensive Analysis of Original Visualisation vs Our Improvements",
-      booktabs = TRUE) %>%
+      booktabs = TRUE) |>
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
-                full_width = FALSE) %>%
-  column_spec(1, bold = TRUE, width = "2cm") %>%
-  column_spec(2, width = "3cm") %>%
-  column_spec(3, width = "3cm") %>%
+                full_width = FALSE) |>
+  column_spec(1, bold = TRUE, width = "2cm") |>
+  column_spec(2, width = "3cm") |>
+  column_spec(3, width = "3cm") |>
   column_spec(4, width = "3cm")
 ```
 
@@ -168,8 +168,8 @@ data_sources <- data.frame(
 
 kable(data_sources, 
       caption = "Data Sources Overview",
-      booktabs = TRUE) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+      booktabs = TRUE) |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) |>
   column_spec(1, bold = TRUE)
 ```
 
@@ -200,21 +200,21 @@ cat("Outside labour force data shape:", dim(not_working), "\n")
 
 ```{r data-cleaning, echo=TRUE}
 # Enhanced fertility data cleaning
-fertility_clean <- fertility %>%
-  clean_names() %>%
-  rename(measure = data_series) %>%
-  mutate(across(-measure, as.character)) %>%
+fertility_clean <- fertility |>
+  clean_names() |>
+  rename(measure = data_series) |>
+  mutate(across(-measure, as.character)) |>
   pivot_longer(
     cols = -measure,
     names_to = "year",
     values_to = "value"
-  ) %>%
+  ) |>
   mutate(
     year = as.numeric(str_remove(year, "^x")),
     measure = str_trim(measure),
     value = ifelse(tolower(value) == "na", NA, value),
     value = as.numeric(value)
-  ) %>%
+  ) |>
   mutate(
     age_band = case_when(
       measure == "Total Fertility Rate (TFR) (Per Female)" ~ "All",
@@ -227,27 +227,27 @@ fertility_clean <- fertility %>%
       str_detect(measure, "45 - 49") ~ "45-49",
       TRUE ~ NA_character_
     )
-  ) %>%
-  filter(!is.na(age_band)) %>%
+  ) |>
+  filter(!is.na(age_band)) |>
   mutate(
     uom = case_when(
       age_band == "All" ~ "per female",
       TRUE ~ "per thousand females"
     )
-  ) %>%
-  filter(year >= 1990 & year <= 2020) %>%
+  ) |>
+  filter(year >= 1990 & year <= 2020) |>
   select(year, age_band, fertility_rate = value, uom)
 
 # Enhanced labour force data cleaning
 clean_labour_data <- function(data, value_col) {
-  data %>%
-    clean_names() %>%
-    filter(age %in% c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")) %>%
+  data |>
+    clean_names() |>
+    filter(age %in% c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")) |>
     mutate(
       !!value_col := na_if(!!sym(value_col), "-"),
       !!value_col := as.numeric(!!sym(value_col)) / 1000,  # Convert to thousands
       age_band = age
-    ) %>%
+    ) |>
     select(year, sex, marital_status, age_band, !!value_col)
 }
 
@@ -256,8 +256,8 @@ not_working_clean <- clean_labour_data(not_working, "outside_labour_force")
 
 # Create aggregated totals
 create_totals <- function(data, value_col) {
-  data %>%
-    group_by(year, sex, marital_status) %>%
+  data |>
+    group_by(year, sex, marital_status) |>
     summarise(
       age_band = "All",
       !!value_col := sum(!!sym(value_col), na.rm = TRUE),
@@ -284,9 +284,9 @@ cat("✓ Data cleaning completed successfully\n")
 ```{r missing-data, echo=TRUE}
 # Check for missing data patterns
 missing_analysis <- list(
-  fertility = fertility_clean %>% summarise(across(everything(), ~sum(is.na(.)))),
-  work = work_clean %>% summarise(across(everything(), ~sum(is.na(.)))),
-  not_working = not_working_clean %>% summarise(across(everything(), ~sum(is.na(.))))
+  fertility = fertility_clean |> summarise(across(everything(), ~sum(is.na(.)))),
+  work = work_clean |> summarise(across(everything(), ~sum(is.na(.)))),
+  not_working = not_working_clean |> summarise(across(everything(), ~sum(is.na(.))))
 )
 
 cat("Missing Data Summary:\n")
@@ -300,8 +300,8 @@ cat("Outside labour force missing values:", sum(is.na(not_working_clean$outside_
 ```{r outlier-analysis, echo=TRUE}
 # Enhanced outlier detection function
 detect_outliers_iqr <- function(df, value_col, group_cols) {
-  df %>%
-    group_by(across(all_of(group_cols))) %>%
+  df |>
+    group_by(across(all_of(group_cols))) |>
     mutate(
       Q1 = quantile(.data[[value_col]], 0.25, na.rm = TRUE),
       Q3 = quantile(.data[[value_col]], 0.75, na.rm = TRUE),
@@ -309,17 +309,17 @@ detect_outliers_iqr <- function(df, value_col, group_cols) {
       lower_bound = Q1 - 1.5 * IQR,
       upper_bound = Q3 + 1.5 * IQR,
       is_outlier = .data[[value_col]] < lower_bound | .data[[value_col]] > upper_bound
-    ) %>%
+    ) |>
     ungroup()
 }
 
 # Apply outlier detection
-fertility_outliers <- fertility_clean %>%
-  filter(age_band != "All") %>%
+fertility_outliers <- fertility_clean |>
+  filter(age_band != "All") |>
   detect_outliers_iqr("fertility_rate", "age_band")
 
-work_outliers <- work_clean %>%
-  filter(age_band != "All", sex == "female") %>%
+work_outliers <- work_clean |>
+  filter(age_band != "All", sex == "female") |>
   detect_outliers_iqr("labour_force", c("age_band", "marital_status"))
 
 # Outlier summary
@@ -339,7 +339,7 @@ outlier_summary <- data.frame(
 
 kable(outlier_summary, 
       caption = "Outlier Detection Summary",
-      booktabs = TRUE) %>%
+      booktabs = TRUE) |>
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
@@ -394,12 +394,12 @@ We will join the datasets together to create a single tibble that contains all t
 #| eval: true
 
 # Filter labour data to only include females
-work_clean_female <- work_clean %>% 
-  filter(sex == "female") %>% 
+work_clean_female <- work_clean |> 
+  filter(sex == "female") |> 
   select(-sex)
 
-not_working_clean_female <- not_working_clean %>% 
-  filter(sex == "female") %>% 
+not_working_clean_female <- not_working_clean |> 
+  filter(sex == "female") |> 
   select(-sex)
 
 cat("✓ Filtered to female population only\n")
@@ -435,7 +435,7 @@ A `left_join()` is used joining the `fertility_clean` tibble to the `labour_stat
 #| eval: true
 
 # Join fertility data with labour status data
-fertility_labour_joined <- fertility_clean %>%
+fertility_labour_joined <- fertility_clean |>
   left_join(labour_status_female, by = c("year", "age_band"))
 
 cat("✓ Joined fertility and labour data successfully\n")
@@ -451,19 +451,19 @@ Conversion of `labour_force` and `outside_labour_force` columns to have a single
 #| eval: true
 
 # Create final analytical dataset
-final_dataset <- fertility_labour_joined %>%
+final_dataset <- fertility_labour_joined |>
   pivot_longer(
     cols = c("labour_force", "outside_labour_force"),
     names_to = "labour_status",
     values_to = "count"
-  ) %>%
-  group_by(year) %>%
-  filter(!all(is.na(count))) %>%  # Remove years with no labour data (1995, 2000, 2005)
-  ungroup() %>%
+  ) |>
+  group_by(year) |>
+  filter(!all(is.na(count))) |>  # Remove years with no labour data (1995, 2000, 2005)
+  ungroup() |>
   mutate(
     count = replace_na(count, 0),
     labour_status_label = tools::toTitleCase(gsub("_", " ", labour_status))
-  ) %>%
+  ) |>
   filter(!is.na(fertility_rate))  # Remove rows with missing fertility data
 
 cat("✓ Data transformation completed successfully\n")
@@ -476,7 +476,7 @@ cat("✓ Data transformation completed successfully\n")
 #| eval: true
 
 # Validate final dataset
-cat("📊 FINAL DATASET SUMMARY:\n")
+cat("FINAL DATASET SUMMARY:\n")
 cat("Total records:", nrow(final_dataset), "\n")
 cat("Time period:", min(final_dataset$year), "to", max(final_dataset$year), "\n")
 cat("Age groups:", length(unique(final_dataset$age_band)), "\n")
@@ -484,7 +484,7 @@ cat("Marital statuses:", length(unique(final_dataset$marital_status)), "\n")
 cat("Labour statuses:", length(unique(final_dataset$labour_status)), "\n")
 
 # Check for missing values
-cat("\n🔍 MISSING VALUES CHECK:\n")
+cat("\nMISSING VALUES CHECK:\n")
 cat("Missing years:", sum(is.na(final_dataset$year)), "\n")
 cat("Missing age bands:", sum(is.na(final_dataset$age_band)), "\n")
 cat("Missing fertility rates:", sum(is.na(final_dataset$fertility_rate)), "\n")
@@ -493,7 +493,7 @@ cat("Missing labour status:", sum(is.na(final_dataset$labour_status)), "\n")
 cat("Missing count values:", sum(is.na(final_dataset$count)), "\n")
 
 # Display unique values for categorical variables
-cat("\n📋 CATEGORICAL VARIABLES:\n")
+cat("\nCATEGORICAL VARIABLES:\n")
 cat("Unique marital statuses:", paste(unique(final_dataset$marital_status), collapse = ", "), "\n")
 cat("Unique age bands:", paste(unique(final_dataset$age_band), collapse = ", "), "\n")
 cat("Unique labour statuses:", paste(unique(final_dataset$labour_status), collapse = ", "), "\n")
@@ -510,8 +510,8 @@ glimpse(final_dataset)
 
 # Create aggregated totals function for reusability
 create_totals <- function(data, value_col) {
-  data %>%
-    group_by(year, sex, marital_status) %>%
+  data |>
+    group_by(year, sex, marital_status) |>
     summarise(
       age_band = "All",
       !!value_col := sum(!!sym(value_col), na.rm = TRUE),
@@ -539,7 +539,7 @@ cat("Not working data with totals shape:", dim(not_working_complete), "\n")
 #| eval: true
 
 # Summary statistics for final dataset
-summary_stats <- final_dataset %>%
+summary_stats <- final_dataset |>
   summarise(
     total_records = n(),
     unique_years = n_distinct(year),
@@ -570,7 +570,7 @@ summary_table <- data.frame(
 kable(summary_table, 
       caption = "Final Dataset Summary Statistics",
       col.names = c("Metric", "Value"),
-      booktabs = TRUE) %>%
+      booktabs = TRUE) |>
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 cat("✓ Final dataset validation completed successfully\n")
@@ -601,9 +601,9 @@ This integrated dataset forms the foundation for our comprehensive analysis of S
 
 # Preview the final dataset structure
 cat("📋 FINAL DATASET PREVIEW:\n")
-head(final_dataset, 10) %>%
+head(final_dataset, 10) |>
   kable(caption = "Sample of Final Integrated Dataset",
-        booktabs = TRUE) %>%
+        booktabs = TRUE) |>
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
 
@@ -615,59 +615,60 @@ head(final_dataset, 10) %>%
 
 ```{r correlation-analysis, echo=TRUE}
 # Calculate correlations between key variables
-correlation_data <- final_dataset %>%
-  filter(age_band == "All") %>%
-  group_by(year, labour_status) %>%
+correlation_data <- final_dataset |>
+  filter(age_band == "All") |>
+  group_by(year, labour_status) |>
   summarise(
     fertility_rate = first(fertility_rate),
     total_count = sum(count, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  pivot_wider(names_from = labour_status, values_from = total_count) %>%
+  ) |>
+  pivot_wider(names_from = labour_status, values_from = total_count) |>
   mutate(
     labour_participation_rate = labour_force / (labour_force + outside_labour_force),
     total_female_population = labour_force + outside_labour_force
   )
 
 # Calculate correlation matrix
-cor_matrix <- correlation_data %>%
-  select(fertility_rate, labour_participation_rate, labour_force, outside_labour_force) %>%
+cor_matrix <- correlation_data |>
+  select(fertility_rate, labour_participation_rate, labour_force, outside_labour_force) |>
   cor(use = "complete.obs")
 
 # Display correlation matrix
 kable(round(cor_matrix, 3), 
       caption = "Correlation Matrix: Key Variables",
-      booktabs = TRUE) %>%
+      booktabs = TRUE) |>
   kable_styling(bootstrap_options = c("striped", "hover"))
 
 # Key correlation insights
-cat("\n📊 Key Correlation Insights:\n")
+cat("\nKey Correlation Insights:\n")
 cat("• Fertility Rate vs Labour Participation Rate:", round(cor_matrix["fertility_rate", "labour_participation_rate"], 3), "\n")
 cat("• Fertility Rate vs Labour Force:", round(cor_matrix["fertility_rate", "labour_force"], 3), "\n")
 cat("• Fertility Rate vs Outside Labour Force:", round(cor_matrix["fertility_rate", "outside_labour_force"], 3), "\n")
 ```
+There is a strong negative correlation between fertility rate and female labour participation and overall female labour force size. However, there is only a moderate correlation between fertility rate and overall female population outside of labour force.
 
 ## Trend Analysis
 
 ```{r trend-analysis, echo=TRUE}
 # Calculate year-over-year changes
-trend_analysis <- final_dataset %>%
-  filter(age_band == "All") %>%
-  group_by(year, labour_status) %>%
+trend_analysis <- final_dataset |>
+  filter(age_band == "All") |>
+  group_by(year, labour_status) |>
   summarise(
     fertility_rate = first(fertility_rate),
     total_count = sum(count, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  arrange(year) %>%
+  ) |>
+  arrange(year) |>
   mutate(
     fertility_change = fertility_rate - lag(fertility_rate),
     fertility_pct_change = (fertility_rate - lag(fertility_rate)) / lag(fertility_rate) * 100
   )
 
 # Summary statistics
-summary_stats <- trend_analysis %>%
-  filter(!is.na(fertility_change)) %>%
+summary_stats <- trend_analysis |>
+  filter(!is.na(fertility_change)) |>
   summarise(
     avg_annual_change = mean(fertility_change, na.rm = TRUE),
     total_decline = first(fertility_rate) - last(fertility_rate),
@@ -690,8 +691,8 @@ cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3
 
 ```{r interactive-dashboard, echo=TRUE}
 # Prepare data for visualisation
-viz_data <- final_dataset %>%
-  group_by(year, marital_status, labour_status_label) %>%
+viz_data <- final_dataset |>
+  group_by(year, marital_status, labour_status_label) |>
   summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
 
 # Create shared data for crosstalk
@@ -706,9 +707,9 @@ filter_widget <- filter_select(
 )
 
 # Enhanced visualisation with better scaling
-fertility_line_data <- final_dataset %>%
-  filter(age_band == "All") %>%
-  select(year, fertility_rate) %>%
+fertility_line_data <- final_dataset |>
+  filter(age_band == "All") |>
+  select(year, fertility_rate) |>
   distinct()
 
 # Calculate scaling factor more intelligently
@@ -732,14 +733,14 @@ p_main <- ggplot() +
   geom_line(
     data = fertility_line_data,
     aes(x = year, y = fertility_rate * scale_factor, group = 1),
-    color = "#e74c3c", size = 2, alpha = 0.9
+    color = "#e74c3c", size = 1, alpha = 0.9
   ) +
   geom_point(
     data = fertility_line_data,
     aes(x = year, y = fertility_rate * scale_factor,
         text = paste("Year:", year, "<br>",
                     "Total Fertility Rate:", round(fertility_rate, 2))),
-    color = "#c0392b", size = 3
+    color = "#c0392b", size = 1
   ) +
   # Scales and labels
   scale_y_continuous(
@@ -770,7 +771,7 @@ p_main <- ggplot() +
   )
 
 # Convert to interactive
-interactive_plot <- ggplotly(p_main, tooltip = "text") %>%
+interactive_plot <- ggplotly(p_main, tooltip = "text") |>
   layout(
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.15),
     margin = list(b = 100, t = 80),
@@ -797,14 +798,14 @@ tagList(
 
 ```{r age-specific-viz, fig.cap="Age-Specific Fertility Rate Trends"}
 # Age-specific fertility trends
-age_specific_data <- final_dataset %>%
-  filter(age_band != "All") %>%
-  group_by(year, age_band) %>%
+age_specific_data <- final_dataset |>
+  filter(age_band != "All") |>
+  group_by(year, age_band) |>
   summarise(fertility_rate = first(fertility_rate), .groups = "drop")
 
 p_age_specific <- ggplot(age_specific_data, aes(x = year, y = fertility_rate, color = age_band)) +
   geom_line(size = 1.2, alpha = 0.8) +
-  geom_point(size = 2, alpha = 0.6) +
+  geom_point(size = 1, alpha = 0.6) +
   scale_color_viridis_d(name = "Age Group") +
   labs(
     title = "Age-Specific Fertility Rate Trends",
@@ -822,21 +823,21 @@ p_age_specific <- ggplot(age_specific_data, aes(x = year, y = fertility_rate, co
 print(p_age_specific)
 
 # Calculate age group contributions
-age_contributions <- age_specific_data %>%
-  group_by(age_band) %>%
+age_contributions <- age_specific_data |>
+  group_by(age_band) |>
   summarise(
     avg_fertility = mean(fertility_rate, na.rm = TRUE),
     decline_1990_2020 = first(fertility_rate) - last(fertility_rate),
     pct_decline = (first(fertility_rate) - last(fertility_rate)) / first(fertility_rate) * 100,
     .groups = "drop"
-  ) %>%
+  ) |>
   arrange(desc(avg_fertility))
 
 kable(age_contributions, 
       digits = 1,
       caption = "Age-Specific Fertility Analysis (1990-2020)",
       col.names = c("Age Group", "Average Fertility Rate", "Absolute Decline", "Percentage Decline (%)"),
-      booktabs = TRUE) %>%
+      booktabs = TRUE) |>
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
@@ -848,18 +849,18 @@ kable(age_contributions,
 
 ```{r summary-insights, echo=FALSE}
 # Calculate key insights
-key_insights <- final_dataset %>%
-  filter(age_band == "All") %>%
-  group_by(year) %>%
+key_insights <- final_dataset |>
+  filter(age_band == "All") |>
+  group_by(year) |>
   summarise(
     fertility_rate = first(fertility_rate),
     total_labour_force = sum(count[labour_status == "labour_force"], na.rm = TRUE),
     total_outside_labour = sum(count[labour_status == "outside_labour_force"], na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   mutate(
     labour_participation_rate = total_labour_force / (total_labour_force + total_outside_labour)
-  ) %>%
+  ) |>
   summarise(
     fertility_decline = (first(fertility_rate) - last(fertility_rate)) / first(fertility_rate) * 100,
     labour_participation_increase = (last(labour_participation_rate) - first(labour_participation_rate)) * 100,
@@ -889,14 +890,14 @@ cat("   • Economic incentives may need restructuring\n")
 
 ```{r statistical-tests, echo=TRUE}
 # Perform trend analysis
-trend_test_data <- final_dataset %>%
-  filter(age_band == "All") %>%
-  group_by(year) %>%
+trend_test_data <- final_dataset |>
+  filter(age_band == "All") |>
+  group_by(year) |>
   summarise(
     fertility_rate = first(fertility_rate),
     total_population = sum(count, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   filter(!is.na(fertility_rate))
 
 # Linear regression to test trend significance
@@ -920,7 +921,7 @@ cat("• Conclusion: Trend is", ifelse(trend_summary$p.value[2] < 0.05, "STATIST
 ```{r team-contributions, echo=FALSE}
 team_contributions <- data.frame(
   Team_Member = c("Guo Zi Qiang Robin", "Chew Tze Han", "Cheong Wai Hong Jared", "Akram", "Gregory Tan"),
-  Primary_Role = c("NA", "NA", "NA", "NA", "NA"), 
+  Primary_Role = c("Data Engineering & Cleaning", "NA", "NA", "NA", "NA"), 
   Contribution = c("NA", "NA", "NA", "NA", "NA")
 )
 ```

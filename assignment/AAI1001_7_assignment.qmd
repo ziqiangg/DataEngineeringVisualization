@@ -588,25 +588,26 @@ max_count     <- max(agg_counts$count,             na.rm = TRUE)
 max_fertility <- max(final_cleaned$fertility_rate, na.rm = TRUE)
 scale_factor  <- if (max_fertility > 0) (max_count * 0.5) / max_fertility else 1
 
-# 6. Build ggplot with marital-status bars + fertility lines
+# 6. Build ggplot with year in hover text
 p_final <- ggplot() +
   # Bars: dodged by marital status, filtered by labour status
   geom_col(
-    data     = shared_counts,
+    data = shared_counts,
     aes(
       x    = year,
       y    = count,
       fill = marital_status,
       text = paste0(
-        "Labour status: ", labour_status_label,
+        "Year: ",             year,
+        "<br>Labour status: ", labour_status_label,
         "<br>Marital status: ", tools::toTitleCase(marital_status),
-        "<br>Count: ", count
+        "<br>Count: ",         count
       )
     ),
     position = position_dodge(width = 0.8, preserve = "single"),
     width    = 0.7
   ) +
-  # Lines: fertility rate over time, with hover text
+  # Lines: fertility rate over time, with year in hover
   geom_line(
     data = final_cleaned %>% filter(age_band != "All"),
     aes(
@@ -615,7 +616,8 @@ p_final <- ggplot() +
       color = age_band,
       group = age_band,
       text  = paste0(
-        "Age band: ", age_band,
+        "Year: ",             year,
+        "<br>Age band: ",      age_band,
         "<br>Fertility rate: ", round(fertility_rate, 2)
       )
     ),

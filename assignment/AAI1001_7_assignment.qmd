@@ -553,7 +553,126 @@ tagList(
 )
 ```
 
+# Data Visualisation Ver 2
 
+```{r}
+library(dplyr)
+library(ggplot2)
+library(crosstalk)
+library(plotly)
+
+# 1. Clean & title-case labour status
+final_cleaned <- final %>%
+  mutate(
+    labour_status_label = tools::toTitleCase(gsub("_", " ", labour_status))
+  )
+
+# 2. Aggregate counts by year × labour status × marital status
+agg_counts <- final_cleaned %>%
+  group_by(year, labour_status_label, marital_status) %>%
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
+
+# 3. SharedData for the bars (so filter_select only affects labour status)
+shared_counts <- SharedData$new(agg_counts, group = "labour_status_selection")
+
+# 4. Labour-status filter widget
+filter_widget <- filter_select(
+  id         = "labour_status_filter",
+  label      = "Select Labour Status:",
+  sharedData = shared_counts,
+  group      = ~labour_status_label
+)
+
+# 5. Compute secondary-axis scale factor
+max_count     <- max(agg_counts$count,             na.rm = TRUE)
+max_fertility <- max(final_cleaned$fertility_rate, na.rm = TRUE)
+scale_factor  <- if (max_fertility > 0) (max_count * 0.5) / max_fertility else 1
+
+# 6. Build ggplot with marital-status bars + fertility lines
+p_final <- ggplot() +
+  # Bars: dodged by marital status, filtered by labour status
+  geom_col(
+    data     = shared_counts,
+    aes(
+      x    = year,
+      y    = count,
+      fill = marital_status,
+      text = paste0(
+        "Labour status: ", labour_status_label,
+        "<br>Marital status: ", tools::toTitleCase(marital_status),
+        "<br>Count: ", count
+      )
+    ),
+    position = position_dodge(width = 0.8, preserve = "single"),
+    width    = 0.7
+  ) +
+  # Lines: fertility rate over time, with hover text
+  geom_line(
+    data = final_cleaned %>% filter(age_band != "All"),
+    aes(
+      x     = year,
+      y     = fertility_rate * scale_factor,
+      color = age_band,
+      group = age_band,
+      text  = paste0(
+        "Age band: ", age_band,
+        "<br>Fertility rate: ", round(fertility_rate, 2)
+      )
+    ),
+    linewidth = 0.8
+  ) +
+  # Dual y-axis
+  scale_y_continuous(
+    name     = "Labour Count (bars)",
+    sec.axis = sec_axis(~ . / scale_factor, name = "Fertility Rate (lines)")
+  ) +
+  # Colour palette for marital status
+  scale_fill_brewer(
+    palette = "Pastel1",
+    name    = "Marital Status",
+    labels  = ~tools::toTitleCase(gsub("_", " ", .x))
+  ) +
+  # Colour palette for age bands
+  scale_color_brewer(
+    palette = "Set2",
+    name    = "Age Band"
+  ) +
+  labs(
+    title    = "Fertility Rate and Labour Status × Marital Status Over Time",
+    subtitle = "Filter by in- vs outside-labour force; bars show marital status breakdown",
+    x        = "Year"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title      = element_text(face = "bold", size = 16),
+    axis.title      = element_text(face = "bold"),
+    legend.position = "bottom",
+    legend.box      = "vertical",
+    legend.title    = element_text(face = "bold")
+  )
+
+# 7. Convert to Plotly with enhanced hover and legend underneath
+interactive_plot <- ggplotly(
+  p_final,
+  tooltip = "text"
+) %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x           = 0.5,
+      xanchor     = "center",
+      y           = -0.3
+    ),
+    margin = list(b = 120)
+  )
+
+# 8. Render widget + plot
+tagList(
+  filter_widget,
+  interactive_plot
+)
+
+```
 
 
 # References {#references}
@@ -570,9 +689,5 @@ Singapore Department of Statistics. (n.d.). Population by age group, sex and typ
 Tan, T. (2024a, March 11). Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time. The Straits Times. [https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time](https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time){target="_blank"}
 
 Tan, T. (2024b, June 30). Why the fertility rate doesn’t capture socio-economic or cultural trends. The Straits Times. [https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends](https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends){target="_blank"}
-
-
-
-
 
 

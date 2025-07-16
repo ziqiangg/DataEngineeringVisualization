@@ -7,7 +7,6 @@ author:
   - name: Cheong Wai Hong Jared
   - name: Akram
   - name: Gregory Tan
-
 date: today
 format:
   html:
@@ -22,26 +21,34 @@ format:
     fig-height: 6
     warning: false
     message: false
+bibliography: references.bib  
+csl: https://raw.githubusercontent.com/citation-style-language/styles/master/apa.csl
 ---
 
 ```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
-# Load necessary libraries
+# Load necessary libraries (things that are def needed)
+library(crosstalk)
 library(tidyverse) # for data manipulation and visualization
 library(viridis) # for color scales
 library(ggpp) # for position_dodgenudge 
 library(ggrepel) # for text repelling
-library(directlabels) # for categorical text labeling
-library(ggforce) # for enclosing shapes
-library(janitor) # for cleaning 
-library(ggplot2) # for plotting
-library(plotly) # for interactive plots
-library(tools) # 
-library(ggiraph)
 library(RColorBrewer) # color palettes specifically tailored for data visualization
 library(crosstalk)
 library(htmltools)
 library(dplyr)
 library(knitr)
+library(tools) # 
+library(ggiraph)
+library(ggplot2) # for plotting
+library(plotly) # for interactive plots
+library(janitor) # for cleaning 
+library(gt)
+
+# may not be needed/not used
+# library(directlabels) # for categorical text labeling
+# library(ggforce) # for enclosing shapes
+
+#to be verified USE gt package not kable
 library(kableExtra)
 library(corrplot)
 library(broom)
@@ -51,8 +58,8 @@ library(scales)
 options(scipen = 999)
 knitr::opts_chunk$set(
   echo = TRUE,
-  warning = FALSE,
-  message = FALSE,
+#  warning = FALSE,
+#  message = FALSE,
   fig.align = "center",
   out.width = "100%"
 )
@@ -78,7 +85,8 @@ Singapore's total fertility rate has plummeted to historic lows, dropping below 
 
 ## Background & Significance
 
-Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that visualisations from [Straits Times](#references) neglect. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from [SingStat](#references) as well as labour participation and marital status data from [data.gov.sg](#references). 
+Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that visualisations from [@tan2024a] neglect. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from [@singstat2023] as well as labour participation and marital status data from [@datagovsg2020a] and [@datagovsg2020b].
+
 
 **Disclaimer:**
 *To note that data for 1995, 2000 and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years due to the conduct of the Population Census 2000, General Household Surveys 1995 and 2005 by the Singapore Department of Statistics.*
@@ -104,8 +112,11 @@ Singapore faces a demographic crisis with one of the world's lowest fertility ra
 ## Strengths & Weaknesses Analysis
 
 ```{r analysis-table, echo=FALSE}
+#| label: tbl-1
+#| tbl-cap: "Comprehensive Analysis of Original Visualisation vs Our Improvements"
+
+# Create the data frame
 analysis_df <- data.frame(
-  Aspect = c("Data Quality", "Time Scope", "Context", "Interactivity", "Demographic Detail", "Design"),
   Strengths = c(
     "Uses official SingStat data",
     "Clear recent trend shown",
@@ -132,45 +143,82 @@ analysis_df <- data.frame(
   )
 )
 
-kable(analysis_df, 
-      caption = "Comprehensive Analysis of Original Visualisation vs Our Improvements",
-      booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
-                full_width = FALSE) |>
-  column_spec(1, bold = TRUE, width = "2cm") |>
-  column_spec(2, width = "3cm") |>
-  column_spec(3, width = "3cm") |>
-  column_spec(4, width = "3cm")
+# Create the table using gt
+gt_table <- analysis_df |>
+  gt() |>
+  cols_label(
+    Strengths = "Strengths",
+    Weaknesses = "Weaknesses",
+    Our_Improvements = "Our Improvements"
+  ) |>
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")  # Bold the column headers
+    ),
+    locations = cells_column_labels(columns = c("Strengths", "Weaknesses", "Our_Improvements"))  # Apply to all column headers
+  ) |>
+  tab_options(
+    table.font.size = 12,
+    table.width = pct(80)
+  ) |>
+  opt_table_font(
+    font = "Arial"
+  )
+
+# Display the table
+gt_table
 ```
 
-## Literature Context
-
-The original visualisations focus on two variables: Singapore's total fertility rate (quantitative) and years (quantitative) from 2019 to 2023. While these visualisations provide a clear overview of the declining fertility trend, they lack depth in exploring the underlying socioeconomic factors that contribute to this trend.
-
-Recent research by [Tan (2024)](https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends) critiques oversimplified fertility visualisations, emphasising the need to **incorporate socioeconomic and cultural factors** that drive rising singlehood and delayed marriage patterns.
+The original visualisations focus on Singapore's total fertility rate (TFR) from 2019 to 2023, but fail to explore the socioeconomic factors driving the decline. Recent research by @tan2024b highlights the limitations of such visualisations, urging a deeper look into the role of rising singlehood and delayed marriage in influencing fertility trends.
 
 ---
 
 # Data Sources & Methodology
 
-## Data Sources
-
 ```{r data-sources, echo=FALSE}
+#| eval: true
+#| output-location: column
+#| label: tbl-2
+#| tbl-cap: "Data Sources Overview"
+
+# Create the data frame
 data_sources <- data.frame(
   Dataset = c("Fertility Rates", "Labour Force (Working)", "Labour Force (Not Working)"),
   Source = c("SingStat", "data.gov.sg", "data.gov.sg"),
-  Time_Period = c("1990-2022", "1990-2022", "1990-2022"),
+  Time_Period = c("1960-2024", "1991-2022", "1991-2022"),
   Variables = c("Age-specific fertility rates, Total fertility rate", 
                 "Female labour force by age & marital status",
                 "Females outside labour force by age & marital status"),
-  Records = c("17 time series", "~2,500 records", "~2,500 records")
+  Records = c("17 variables wide format", "5 columns long format", "5 columns long format")
 )
 
-kable(data_sources, 
-      caption = "Data Sources Overview",
-      booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) |>
-  column_spec(1, bold = TRUE)
+# Create the table using gt
+gt_table <- data_sources |>
+  gt() |>
+  cols_label(
+    Dataset = "Dataset",
+    Source = "Source",
+    Time_Period = "Time Period",
+    Variables = "Variables",
+    Records = "Records"
+  ) |>
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")  # Bold the column headers
+    ),
+    locations = cells_column_labels(columns = c("Dataset", "Source", "Time_Period", "Variables", "Records"))  # Apply to all column headers
+  ) |>
+  tab_options(
+    table.font.size = 12,
+    table.width = pct(80)
+  ) |>
+  opt_table_font(
+    font = "Arial"
+  )
+
+# Display the table
+gt_table
+
 ```
 
 ## Data Engineering Pipeline
@@ -196,7 +244,37 @@ cat("Labour force data shape:", dim(work), "\n")
 cat("Outside labour force data shape:", dim(not_working), "\n")
 ```
 
-### Data Cleaning & Transformation
+## Data Cleaning & Transformation
+The following steps will be taken to clean and reshape "`fertility`":
+
+- "`fertility`" tibble contains "na" strings which are not actually NA values, these points will need to be converted to NA values
+
+- fertility rate data from SingStat is in wide format with years as the columns, we will pivot long for year-wise plots
+
+- fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years after 1990 and up till 2022
+
+- standardise age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)' and also keep Total Fertility Rate data (aggregated across all age bands)
+
+- filtered to include age specific fertility rates and the total fertility rate by year
+
+- introduce Unit of Measurement (uom) column to indicate scaling for Total Fertility Rates and age banded fertility rates
+
+
+
+The following steps will be taken to clean and reshape "`not_working`":
+
+- standardise column names to the 7 (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) age bands to be consistent with fertility and remove extra bandings
+
+- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
+
+- some outside_labour_force values are "-" which are not valid numerics, convert these to NA
+
+- rename age column to age_band to match `fertility`
+
+- aggregate age bands to introduce "All" to represent population outside labour force by year and marital status only, this is so that we can introduce interactivity with Total Fertility Rate and fertility rates across age bands
+
+
+"work" tibble is cleaned in a similar way to "not_working".
 
 ```{r data-cleaning, echo=TRUE}
 # Enhanced fertility data cleaning

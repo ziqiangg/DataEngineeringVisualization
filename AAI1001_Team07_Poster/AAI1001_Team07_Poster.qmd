@@ -1,0 +1,85 @@
+---
+title: Visualisation of Singapore's Fertility Crisis
+format:
+  poster-typst:
+    keep-typ: true 
+    size: "36x24"
+    poster-authors: "Akram, M., Guo, Z., Tan, G., Cheong, W. and Chew, T."
+    departments: "&nbsp;"
+    institution-logo: "./images/sit.png"
+    footer-text: "AAI1001 AY24/25 Tri 2 Team Project"
+    footer-url: "&nbsp;"
+    footer-emails: "Team 07"
+    footer-color: "ebcfb2"
+    keywords: ["AAA", "BBB", "CCC"]
+---
+
+
+# Introduction
+
+Singapore faces a **demographic crisis** with one of the world's lowest fertility rates, dropping below 1.0 for the first time in 2023. This threatens the nation's demographic sustainability and economic future. Our project analyses **three decades of fertility and labour force data** to identify patterns and relationships that existing visualisations neglect.
+
+:::{.callout-note}
+## Research Focus
+Understanding the underlying **socioeconomic factors** is crucial for policy formulation and national demographic sustainability.
+:::
+
+
+# Original Visualisation
+
+![Total fertility rate from 2019 to 2023](images/total_fertility_rate.png){#fig-1}
+
+# Original Visualisation Analysis
+
+| Strengths                      | Weaknesses                        | Our Improvements                                   |
+|-------------------------------|-----------------------------------|----------------------------------------------------|
+| Uses official SingStat data   | Limited to 2019–2023 only         | Extended analysis: 1990–2020 (32 years)            |
+| Clear recent trend            | Missing socioeconomic factors     | Integrated labour force & marital status data      |
+| Professional format           | Static visualization              | Fully interactive dashboard                        |
+| Accessible to public          | No age-specific breakdown         | Age-specific fertility rates by group              |
+
+: Fertility Analysis Comparison Table {#tbl-1}
+
+
+# Suggested Improvements
+
+
+| Lorem ipsum dolor sit. | Lorem ipsum. | Lorem ipsum. |
+|------------------------|--------------|--------------|
+| Lorem ipsum dolor.     | Lorem ipsum. | $\alpha$     |
+| Lorem ipsum.           | Lorem ipsum. | $\beta$      |
+| Lorem.                 | Lorem.       | $\gamma$     |
+| Lorem ipsum dolor.     | Lorem.       | $\theta$     |
+
+: Lorem ipsum dolor sit amet {#tbl-2}
+
+# Implementation
+
+Lorem @tbl-1 ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim aeque doleamus animo, cum corpore dolemus, fieri tamen permagna accessio potest, si aliquod aeternum et infinitum impendere malum nobis opinemur. Quod idem licet transferre in voluptatem, ut postea variari voluptas distinguique possit, augeri amplificarique non possit. At etiam Athenis, ut e patre audiebam facete et urbane Stoicos irridente, statua est in quo a nobis philosophia defensa et.
+
+
+
+# Improved Visualisation
+
+::: {.block fill="luma(230)" inset="8pt" radius="4pt"}
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim 
+
+:::
+
+
+# Insight
+
+
+
+# Further Suggestions for Interactivity
+
+
+
+# Conclusion
+
+
+
+# References
+
+

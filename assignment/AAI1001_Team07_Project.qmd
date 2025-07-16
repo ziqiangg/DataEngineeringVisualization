@@ -1,6 +1,6 @@
 ---
 title: "Singapore's Fertility Crisis: A Data-Driven Analysis of Socioeconomic Factors"
-subtitle: "AAI1001 Team 7 Enhanced Data Visualisation Project"
+subtitle: "AAI1001 Team 7 Data Visualisation Project"
 author:
   - name: Guo Zi Qiang Robin
   - name: Chew Tze Han
@@ -43,6 +43,7 @@ library(ggplot2) # for plotting
 library(plotly) # for interactive plots
 library(janitor) # for cleaning 
 library(gt)
+library(stringr)
 
 # may not be needed/not used
 # library(directlabels) # for categorical text labeling
@@ -359,7 +360,7 @@ cat("✓ Data cleaning completed successfully\n")
 
 ## Missing Data Analysis
 
-```{r missing-data, echo=TRUE}
+```{r missing-data, echo=FALSE}
 # Check for missing data patterns
 missing_analysis <- list(
   fertility = fertility_clean |> summarise(across(everything(), ~sum(is.na(.)))),
@@ -372,10 +373,14 @@ cat("Fertility data missing values:", sum(is.na(fertility_clean$fertility_rate))
 cat("Labour force data missing values:", sum(is.na(work_clean$labour_force)), "\n")
 cat("Outside labour force missing values:", sum(is.na(not_working_clean$outside_labour_force)), "\n")
 ```
+The missing values in the labour datasets are caused by combinations of variables that result in highly likely scenarios where the count is actually '0' such as the case of "widowed/divorced" in the age band of "15-19". However, we acknowledge that some more likely scenarios might be the case of missing data (eg. 2022, male, outside labour force, widowed/divorced, 35-39).
 
 ## Outlier Detection & Analysis
 
 ```{r outlier-analysis, echo=TRUE}
+#| label: tbl-3
+#| tbl-cap: "Outlier Detection Summary"
+
 # Enhanced outlier detection function
 detect_outliers_iqr <- function(df, value_col, group_cols) {
   df |>
@@ -391,6 +396,7 @@ detect_outliers_iqr <- function(df, value_col, group_cols) {
     ungroup()
 }
 
+
 # Apply outlier detection
 fertility_outliers <- fertility_clean |>
   filter(age_band != "All") |>
@@ -402,7 +408,7 @@ work_outliers <- work_clean |>
 
 # Outlier summary
 outlier_summary <- data.frame(
-  Dataset = c("Fertility Rates", "Labour Force (Female)", "Outside Labour Force"),
+  Dataset = c("Fertility Rates", "Labour Force (Female)", "Outside Labour Force (Female"),
   Total_Records = c(nrow(fertility_outliers), nrow(work_outliers), 
                    nrow(filter(not_working_clean, sex == "female", age_band != "All"))),
   Outliers_Detected = c(sum(fertility_outliers$is_outlier, na.rm = TRUE),
@@ -415,19 +421,43 @@ outlier_summary <- data.frame(
   )
 )
 
-kable(outlier_summary, 
-      caption = "Outlier Detection Summary",
-      booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover"))
+# Create the table using gt
+outlier_summary_gt <- outlier_summary |>
+  gt() |>
+  cols_label(
+    Dataset = "Dataset",
+    Total_Records = "Total Records",
+    Outliers_Detected = "Outliers Detected",
+    Outlier_Rate = "Outlier Rate (%)"
+  ) |>
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")  # Bold column headers
+    ),
+    locations = cells_column_labels(columns = everything())  # Apply to all column headers
+  ) |>
+  tab_options(
+    table.font.size = 12,
+    table.width = pct(80),
+    table.layout = "auto"
+  ) |>
+  opt_table_font(
+    font = "Arial"
+  )
+
+# Display the table
+outlier_summary_gt
 ```
+
+
 
 ## Outlier Visualisation
 
-```{r outlier-viz, fig.cap="Fertility Rate Outliers by Age Group"}
+```{r fertility-outlier}
 # Enhanced outlier visualisation
 p_outliers <- ggplot(fertility_outliers, 
                     aes(x = year, y = fertility_rate, color = age_band)) +
-  geom_line(size = 0.8, alpha = 0.7) +
+  geom_line(linewidth = 0.8, alpha = 0.7) +
   geom_point(data = filter(fertility_outliers, is_outlier),
              color = "red", size = 2, shape = 21, fill = "white") +
   facet_wrap(~age_band, scales = "free_y", ncol = 3) +
@@ -436,7 +466,8 @@ p_outliers <- ggplot(fertility_outliers,
     subtitle = "Red circles indicate statistical outliers using IQR method",
     x = "Year", 
     y = "Fertility Rate (per 1,000 females)",
-    color = "Age Group"
+    color = "Age Group",
+    caption = "Source: SingStat"
   ) +
   theme_minimal() +
   theme(
@@ -448,6 +479,49 @@ p_outliers <- ggplot(fertility_outliers,
 
 print(p_outliers)
 ```
+This shows that there is uncharacteristically high fertility rate in the 45-49 year old age group in recent times (2017-2020).
+
+```{r labour-fem-outlier}
+#| warning: false
+
+status_labels <- c(
+  "married" = "Married",
+  "single" = "Single",
+  "widowed_divorced" = "Widowed/Divorced"
+)
+
+# Modify the plot code
+p_labour_outliers <- ggplot(work_outliers, 
+                            aes(x = year, y = labour_force, color = age_band)) + 
+  geom_line(linewidth = 0.8, alpha = 0.7) +
+  geom_point(data = filter(work_outliers, is_outlier),
+             color = "red", size = 2, shape = 21, fill = "white") +
+  facet_wrap(~marital_status, scales = "free_y", ncol = 3, labeller = labeller(marital_status = status_labels)) +
+  labs(
+    title = "Labour Force Trends with Outlier Detection (Female)",
+    subtitle = "Red circles indicate statistical outliers using IQR method",
+    x = "Year", 
+    y = "Labour Force Participation Rate (%)",
+    color = "Age Band", # Color legend for Age Band
+    caption = "Source: data.gov.sg"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    strip.text = element_text(face = "bold"),
+    legend.position = "right",  # Keep the legend for Age Band
+    legend.title = element_blank(),  # Remove legend title
+  ) +
+  scale_color_viridis_d(option = "D") +  
+  scale_x_continuous(
+    breaks = seq(min(work_outliers$year), max(work_outliers$year), by = 10),  # Set x-axis breaks to 10-year intervals
+    labels = seq(min(work_outliers$year), max(work_outliers$year), by = 10)  # Label the x-axis at 10-year intervals
+  )
+
+print(p_labour_outliers)
+
+```
+Majority of the outliers were single and occurred in the early 1990s.
 
 ---
 
@@ -548,7 +622,7 @@ cat("✓ Data transformation completed successfully\n")
 ```
 
 ## Step 5: Data Quality Validation
-
+should show this in a better way. maybe a gt table matrix idk
 ```{r validation}
 #| echo: true
 #| eval: true

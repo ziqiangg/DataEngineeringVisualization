@@ -539,7 +539,7 @@ We will join the datasets together to create a single tibble that contains all t
 - `labour_status`: Labour status of the data point, either "labour_force" or "outside_labour_force"
 - `count`: Number of females either in workforce or outside workforce (in thousands)
 
-## Step 1: Filter to Female Population Only
+### Filter to Female Population Only
 
 ```{r filter-female}
 #| echo: true
@@ -559,7 +559,7 @@ cat("Working females data shape:", dim(work_clean_female), "\n")
 cat("Non-working females data shape:", dim(not_working_clean_female), "\n")
 ```
 
-## Step 2: Combine Labour Force Data
+### Combine Labour Force Data
 
 A `full_join()` is used to combine both `work_clean_female` and `not_working_clean_female` tibbles, ensuring that all rows from both tibbles are included to combine the labour force columns. The join is done on the `year`, `marital_status`, and `age_band` columns, common dimensions to both tibbles to prevent any data loss.
 
@@ -578,7 +578,7 @@ cat("✓ Combined labour force data successfully\n")
 cat("Combined labour data shape:", dim(labour_status_female), "\n")
 ```
 
-## Step 3: Join with Fertility Data
+### Join with Fertility Data
 
 A `left_join()` is used joining the `fertility_clean` tibble to the `labour_status_female` tibble, ensuring that all rows from `fertility_clean` are included. This will allow us to combine and be able to associate fertility rates with labour force participation data.
 
@@ -594,7 +594,7 @@ cat("✓ Joined fertility and labour data successfully\n")
 cat("Joined data shape:", dim(fertility_labour_joined), "\n")
 ```
 
-## Step 4: Transform to Long Format
+### Transform to Long Format
 
 Conversion of `labour_force` and `outside_labour_force` columns to have a single column dictating labour status. Years that do not have corresponding labour force data (1995, 2000, 2005) are filtered out as noted in our disclaimer.
 
@@ -614,14 +614,14 @@ final_dataset <- fertility_labour_joined |>
   ungroup() |>
   mutate(
     count = replace_na(count, 0),
-    labour_status_label = tools::toTitleCase(gsub("_", " ", labour_status))
   ) |>
   filter(!is.na(fertility_rate))  # Remove rows with missing fertility data
+
 
 cat("✓ Data transformation completed successfully\n")
 ```
 
-## Step 5: Data Quality Validation
+### Data Quality Validation
 Evaluate the `final_dataset` for total number of records, unique values in each column, presence of missing values ("NA") 
 ```{r validation}
 #| echo: true
@@ -629,7 +629,6 @@ Evaluate the `final_dataset` for total number of records, unique values in each 
 #| label: tbl-4
 #| tbl-cap: "Summary Table of `final_dataset` Tibble"
 
-# 2. Build a summary tibble without Additional_Info
 summary_table <- tibble(
   Column         = names(final_dataset),
   Total_Records  = nrow(final_dataset),
@@ -637,7 +636,6 @@ summary_table <- tibble(
   Missing_Values = sapply(final_dataset, function(x) sum(is.na(x)))
 )
 
-# 3. Compute year range and which years are missing
 if ("year" %in% names(final_dataset)) {
   years_present   <- sort(unique(final_dataset$year[!is.na(final_dataset$year)]))
   yr_min          <- min(years_present)
@@ -680,7 +678,7 @@ if (!is.null(footer_note)) {
 gt_tbl
 ```
 
-## Step 6: Create Aggregated Totals for Analysis
+### Create Aggregated Totals for Analysis
 
 ```{r create-totals}
 #| echo: true
@@ -709,124 +707,95 @@ cat("✓ Created aggregated totals for comprehensive analysis\n")
 cat("Work data with totals shape:", dim(work_complete), "\n")
 cat("Not working data with totals shape:", dim(not_working_complete), "\n")
 ```
-
-## Step 7: Final Dataset Summary and Validation
-
-```{r final-summary}
-#| echo: true
-#| eval: true
-
-# Summary statistics for final dataset
-summary_stats <- final_dataset |>
-  summarise(
-    total_records = n(),
-    unique_years = n_distinct(year),
-    unique_age_bands = n_distinct(age_band),
-    unique_marital_statuses = n_distinct(marital_status),
-    unique_labour_statuses = n_distinct(labour_status),
-    fertility_rate_range = paste(round(min(fertility_rate, na.rm = TRUE), 2), 
-                                "to", 
-                                round(max(fertility_rate, na.rm = TRUE), 2)),
-    total_female_population = sum(count, na.rm = TRUE) / 1000  # Convert to millions
-  )
-
-# Create summary table
-summary_table <- data.frame(
-  Metric = c("Total Records", "Time Span", "Age Groups", "Marital Statuses", 
-             "Labour Statuses", "Fertility Rate Range", "Total Female Population"),
-  Value = c(
-    format(summary_stats$total_records, big.mark = ","),
-    paste(summary_stats$unique_years, "years"),
-    paste(summary_stats$unique_age_bands, "categories"),
-    paste(summary_stats$unique_marital_statuses, "categories"),
-    paste(summary_stats$unique_labour_statuses, "categories"),
-    summary_stats$fertility_rate_range,
-    paste(round(summary_stats$total_female_population, 1), "million person-years")
-  )
-)
-
-kable(summary_table, 
-      caption = "Final Dataset Summary Statistics",
-      col.names = c("Metric", "Value"),
-      booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
-
-cat("✓ Final dataset validation completed successfully\n")
-```
-
 ## Dataset Integration Results
 
 The final integrated dataset successfully combines:
 
 - **Fertility rates** from SingStat (1990-2022)
 - **Female labour force participation** from data.gov.sg
-- **Demographic breakdowns** by age group and marital status
-
-**Key Integration Achievements:**
-
-- ✅ Consistent time series alignment
-- ✅ Standardized age group classifications  
-- ✅ Comprehensive marital status coverage
-- ✅ Robust handling of missing data years
-- ✅ Quality-assured data transformations
+- **Demographic breakdowns** by age group and marital status in time series
 
 This integrated dataset forms the foundation for our comprehensive analysis of Singapore's fertility crisis and its relationship with socioeconomic factors. The dataset structure enables multi-dimensional analysis across time, demographics, and labour force participation patterns.
 
 ```{r preview-final-data}
 #| echo: true
 #| eval: true
-#| label: "preview-final-data"
+#| label: tbl-5
+#| tbl-cap: "Preview of `final_dataset`"
 
-# Preview the final dataset structure
-cat("📋 FINAL DATASET PREVIEW:\n")
-head(final_dataset, 10) |>
-  kable(caption = "Sample of Final Integrated Dataset",
-        booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+  gt(final_dataset) |>
+  tab_header(title = md("**Sample of Final Integrated Dataset**")) |>
+  gt_preview()
 ```
 
 ---
 
 # Statistical Analysis
 
-## Correlation Analysis
-
 ```{r correlation-analysis, echo=TRUE}
+
+#| echo: true
+#| eval: true
+#| label: tbl-6
+#| tbl-cap: "Correlation Matrix"
+
 # Calculate correlations between key variables
 correlation_data <- final_dataset |>
   filter(age_band == "All") |>
   group_by(year, labour_status) |>
   summarise(
     fertility_rate = first(fertility_rate),
-    total_count = sum(count, na.rm = TRUE),
+    total_count     = sum(count, na.rm = TRUE),
     .groups = "drop"
   ) |>
-  pivot_wider(names_from = labour_status, values_from = total_count) |>
+  pivot_wider(
+    names_from  = labour_status,
+    values_from = total_count
+  ) |>
   mutate(
     labour_participation_rate = labour_force / (labour_force + outside_labour_force),
-    total_female_population = labour_force + outside_labour_force
+    total_female_population   = labour_force + outside_labour_force
   )
 
 # Calculate correlation matrix
 cor_matrix <- correlation_data |>
-  select(fertility_rate, labour_participation_rate, labour_force, outside_labour_force) |>
-  cor(use = "complete.obs")
+  select(fertility_rate,
+         labour_participation_rate,
+         labour_force,
+         outside_labour_force) |>
+  cor(use = "complete.obs") |>
+  round(3)
 
-# Display correlation matrix
-kable(round(cor_matrix, 3), 
-      caption = "Correlation Matrix: Key Variables",
-      booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover"))
+# Turn it into a tibble for gt
+cor_tbl <- as.data.frame(cor_matrix) |>
+  rownames_to_column(var = "Variable") |>
+  as_tibble()
+
+# Render with gt
+cor_tbl |>
+  gt(rowname_col = "Variable") |>
+  tab_header(
+    title = md("**Correlation Matrix: Key Variables**")
+  ) |>
+  fmt_number(
+    columns = everything(),
+    decimals = 3
+  )
 
 # Key correlation insights
 cat("\nKey Correlation Insights:\n")
-cat("• Fertility Rate vs Labour Participation Rate:", round(cor_matrix["fertility_rate", "labour_participation_rate"], 3), "\n")
-cat("• Fertility Rate vs Labour Force:", round(cor_matrix["fertility_rate", "labour_force"], 3), "\n")
-cat("• Fertility Rate vs Outside Labour Force:", round(cor_matrix["fertility_rate", "outside_labour_force"], 3), "\n")
+cat("• Fertility Rate vs Labour Participation Rate:",
+    cor_matrix["fertility_rate", "labour_participation_rate"], "\n")
+cat("• Fertility Rate vs Labour Force:",
+    cor_matrix["fertility_rate", "labour_force"], "\n")
+cat("• Fertility Rate vs Outside Labour Force:",
+    cor_matrix["fertility_rate", "outside_labour_force"], "\n")
+
 ```
 There is a strong negative correlation between fertility rate and female labour participation and overall female labour force size. However, there is only a moderate correlation between fertility rate and overall female population outside of labour force.
 
-## Trend Analysis
+**Trend Analysis**
 
 ```{r trend-analysis, echo=TRUE}
 # Calculate year-over-year changes
@@ -854,7 +823,6 @@ summary_stats <- trend_analysis |>
     steepest_decline_value = min(fertility_change, na.rm = TRUE)
   )
 
-cat("📈 Trend Analysis Results:\n")
 cat("• Average annual fertility decline:", round(summary_stats$avg_annual_change, 4), "per year\n")
 cat("• Total fertility decline (1990-2020):", round(summary_stats$total_decline, 2), "\n")
 cat("• Steepest decline occurred in:", summary_stats$steepest_decline_year, "\n")
@@ -870,7 +838,7 @@ cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3
 ```{r interactive-dashboard, echo=TRUE}
 # Prepare data for visualisation
 viz_data <- final_dataset |>
-  group_by(year, marital_status, labour_status_label) |>
+  group_by(year, marital_status, labour_status) |>
   summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
 
 # Create shared data for crosstalk
@@ -881,7 +849,7 @@ filter_widget <- filter_select(
   id = "labour_status_filter",
   label = "Select Labour Status:",
   sharedData = shared_data,
-  group = ~labour_status_label
+  group = ~labour_status
 )
 
 # Enhanced visualisation with better scaling

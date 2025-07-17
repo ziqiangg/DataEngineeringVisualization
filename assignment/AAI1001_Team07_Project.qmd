@@ -531,7 +531,7 @@ Majority of the outliers were single and occurred in the early 1990s.
 
 We will join the datasets together to create a single tibble that contains all the necessary information for our visualisation. The joined tibble will contain the following columns:
 
-- `year`: from 1990 to 2022
+- `year`: from 1991 to 2022
 - `age_band`: Age bands and "All" which is for total fertility rate
 - `marital_status`: Marital status of the data point
 - `fertility_rate`: Fertility rate by age band (per thousand females) and total fertility rate (per female)
@@ -622,36 +622,62 @@ cat("✓ Data transformation completed successfully\n")
 ```
 
 ## Step 5: Data Quality Validation
-should show this in a better way. maybe a gt table matrix idk
+Evaluate the `final_dataset` for total number of records, unique values in each column, presence of missing values ("NA") 
 ```{r validation}
 #| echo: true
 #| eval: true
+#| label: tbl-4
+#| tbl-cap: "Summary Table of `final_dataset` Tibble"
 
-# Validate final dataset
-cat("FINAL DATASET SUMMARY:\n")
-cat("Total records:", nrow(final_dataset), "\n")
-cat("Time period:", min(final_dataset$year), "to", max(final_dataset$year), "\n")
-cat("Age groups:", length(unique(final_dataset$age_band)), "\n")
-cat("Marital statuses:", length(unique(final_dataset$marital_status)), "\n")
-cat("Labour statuses:", length(unique(final_dataset$labour_status)), "\n")
+# 2. Build a summary tibble without Additional_Info
+summary_table <- tibble(
+  Column         = names(final_dataset),
+  Total_Records  = nrow(final_dataset),
+  Unique_Values  = sapply(final_dataset, function(x) length(unique(x))),
+  Missing_Values = sapply(final_dataset, function(x) sum(is.na(x)))
+)
 
-# Check for missing values
-cat("\nMISSING VALUES CHECK:\n")
-cat("Missing years:", sum(is.na(final_dataset$year)), "\n")
-cat("Missing age bands:", sum(is.na(final_dataset$age_band)), "\n")
-cat("Missing fertility rates:", sum(is.na(final_dataset$fertility_rate)), "\n")
-cat("Missing marital status:", sum(is.na(final_dataset$marital_status)), "\n")
-cat("Missing labour status:", sum(is.na(final_dataset$labour_status)), "\n")
-cat("Missing count values:", sum(is.na(final_dataset$count)), "\n")
+# 3. Compute year range and which years are missing
+if ("year" %in% names(final_dataset)) {
+  years_present   <- sort(unique(final_dataset$year[!is.na(final_dataset$year)]))
+  yr_min          <- min(years_present)
+  yr_max          <- max(years_present)
+  full_years      <- seq(yr_min, yr_max)
+  missing_years   <- setdiff(full_years, years_present)
+  missing_txt     <- if (length(missing_years)) {
+    paste(missing_years, collapse = ", ")
+  } else {
+    "None"
+  }
+  footer_note <- paste0(
+    "Year range: ", yr_min, "–", yr_max,
+    " | Missing years: ", missing_txt
+  )
+} else {
+  footer_note <- NULL
+}
 
-# Display unique values for categorical variables
-cat("\nCATEGORICAL VARIABLES:\n")
-cat("Unique marital statuses:", paste(unique(final_dataset$marital_status), collapse = ", "), "\n")
-cat("Unique age bands:", paste(unique(final_dataset$age_band), collapse = ", "), "\n")
-cat("Unique labour statuses:", paste(unique(final_dataset$labour_status), collapse = ", "), "\n")
+# 4. Render as a gt table with footer
+gt_tbl <- summary_table |>
+  gt() |>
+  cols_label(
+    Column         = md("**Column**"),
+    Total_Records  = md("**Total Records**"),
+    Unique_Values  = md("**Unique Values**"),
+    Missing_Values = md("**Missing Values**")
+  ) |>
+  tab_header(
+    title = "Dataset Structure & Completeness Overview"
+  )
 
-# Display data structure
-glimpse(final_dataset)
+if (!is.null(footer_note)) {
+  gt_tbl <- gt_tbl |>
+    tab_source_note(
+      source_note = footer_note
+    )
+}
+
+gt_tbl
 ```
 
 ## Step 6: Create Aggregated Totals for Analysis

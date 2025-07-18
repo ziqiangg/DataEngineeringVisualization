@@ -21,6 +21,7 @@ format:
     fig-height: 6
     warning: false
     message: false
+    link-external-newwindow: true
 bibliography: references.bib  
 csl: https://raw.githubusercontent.com/citation-style-language/styles/master/apa.csl
 ---
@@ -44,6 +45,8 @@ library(plotly) # for interactive plots
 library(janitor) # for cleaning 
 library(gt)
 library(stringr)
+library(scales)
+library(forcats)
 
 # may not be needed/not used
 # library(directlabels) # for categorical text labeling
@@ -53,7 +56,7 @@ library(stringr)
 library(kableExtra)
 library(corrplot)
 library(broom)
-library(scales)
+
 
 # Set global options
 options(scipen = 999)
@@ -359,8 +362,8 @@ cat("✓ Data cleaning completed successfully\n")
 # Data Quality Assessment
 
 ## Missing Data Analysis
-
-```{r missing-data, echo=FALSE}
+Missing Data Summary:
+```{r missing-data}
 # Check for missing data patterns
 missing_analysis <- list(
   fertility = fertility_clean |> summarise(across(everything(), ~sum(is.na(.)))),
@@ -368,7 +371,6 @@ missing_analysis <- list(
   not_working = not_working_clean |> summarise(across(everything(), ~sum(is.na(.))))
 )
 
-cat("Missing Data Summary:\n")
 cat("Fertility data missing values:", sum(is.na(fertility_clean$fertility_rate)), "\n")
 cat("Labour force data missing values:", sum(is.na(work_clean$labour_force)), "\n")
 cat("Outside labour force missing values:", sum(is.na(not_working_clean$outside_labour_force)), "\n")
@@ -616,9 +618,6 @@ final_dataset <- fertility_labour_joined |>
     count = replace_na(count, 0),
   ) |>
   filter(!is.na(fertility_rate))  # Remove rows with missing fertility data
-
-
-cat("✓ Data transformation completed successfully\n")
 ```
 
 ### Data Quality Validation
@@ -784,7 +783,6 @@ cor_tbl |>
   )
 
 # Key correlation insights
-cat("\nKey Correlation Insights:\n")
 cat("• Fertility Rate vs Labour Participation Rate:",
     cor_matrix["fertility_rate", "labour_participation_rate"], "\n")
 cat("• Fertility Rate vs Labour Force:",
@@ -832,6 +830,92 @@ cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3
 ---
 
 # Enhanced Data Visualisation
+
+## Static Visualisation
+
+```{r static-viz, echo=TRUE}
+viz_data <- final_dataset |>
+  group_by(year, marital_status, labour_status) |>
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(
+    status = fct_inorder(paste(marital_status, labour_status, sep = " / "))
+  )
+
+fertility_line_data <- final_dataset |>
+  filter(age_band == "All") |>
+  distinct(year, fertility_rate) |>
+  mutate(
+    fertility_shift = fertility_rate - 1
+  )
+
+max_count    <- max(viz_data$count, na.rm = TRUE)
+scale_factor <- max_count  
+
+ggplot() +
+  geom_col(
+    data = viz_data,
+    aes(x = year, y = count, fill = status),
+    position = position_dodge(width = 0.8),
+    colour = "white", size = 0.2
+  ) +
+  # Fertility line + points, using shifted & scaled fertility
+  geom_line(
+    data = fertility_line_data,
+    aes(x = year, y = fertility_shift * scale_factor),
+    colour = "gray69", size = 1
+  ) +
+  geom_point(
+    data = fertility_line_data,
+    aes(x = year, y = fertility_shift * scale_factor),
+    colour = "gray45", size = 1
+  ) +
+  # Primary + secondary axes
+  scale_y_continuous(
+    name   = "Female Population (thousands)",
+    labels = comma,
+    limits = c(0, max_count),
+    expand = expansion(c(0, 0)),
+    sec.axis = sec_axis(
+      # inverse of y = (fertility - 1) * scale_factor
+      transform = ~ . / scale_factor + 1,
+      name      = "Total Fertility Rate (per female)",
+      breaks    = seq(1, 2, by = 0.25),
+      labels    = label_number(accuracy = 0.1)
+    )
+  ) +
+  # Manual fill colours
+  scale_fill_manual(
+    name   = "Marital Status / Labour Status",
+    values = c(
+      "married / labour_force"                  = "green3",
+      "married / outside_labour_force"          = "darkgreen",
+      "single / labour_force"                   = "red2",
+      "single / outside_labour_force"           = "darkred",
+      "widowed_divorced / labour_force"         = "blue1",
+      "widowed_divorced / outside_labour_force" = "blue4"
+    ),
+    labels = c(
+      "Married – In Labour Force",
+      "Married – Outside Labour Force",
+      "Single – In Labour Force",
+      "Single – Outside Labour Force",
+      "Divorced/Widowed – In Labour Force",
+      "Divorced/Widowed – Outside Labour Force"
+    )
+  ) +
+  labs(
+    title   = "Singapore's Fertility Crisis: Labour Force vs TFR (1991–2020)",
+    x       = "Year",
+    caption = "Data: SingStat & data.gov.sg"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title      = element_text(face = "bold", size = 16),
+    axis.title      = element_text(face = "bold"),
+    legend.position = "bottom",
+    legend.title    = element_text(face = "bold")
+  )
+```
 
 ## Interactive Dashboard
 
@@ -938,11 +1022,7 @@ tagList(
   filter_widget,
   interactive_plot
 )
-```
 
-## Age-Specific Analysis
-
-```{r age-specific-viz, fig.cap="Age-Specific Fertility Rate Trends"}
 # Age-specific fertility trends
 age_specific_data <- final_dataset |>
   filter(age_band != "All") |>
@@ -1062,27 +1142,5 @@ cat("• Conclusion: Trend is", ifelse(trend_summary$p.value[2] < 0.05, "STATIST
 
 # Team Contributions
 
-## Work Distribution
 
-```{r team-contributions, echo=FALSE}
-team_contributions <- data.frame(
-  Team_Member = c("Guo Zi Qiang Robin", "Chew Tze Han", "Cheong Wai Hong Jared", "Akram", "Gregory Tan"),
-  Primary_Role = c("Data Engineering & Cleaning", "NA", "NA", "NA", "NA"), 
-  Contribution = c("NA", "NA", "NA", "NA", "NA")
-)
 ```
-
-# References {#references}
-Data.gov.sg. (n.d.-a). data.gov.sg. [https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e19478b30d8f5cd6a1dc482bf2e46eb7](https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e19478b30d8f5cd6a1dc482bf2e46eb7){target="_blank"}
-
-Data.gov.sg. (n.d.-b). data.gov.sg. [https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e2475676af29ec78749f1b22cf8b301c](https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e2475676af29ec78749f1b22cf8b301c){target="_blank"}
-
-MacroTrends. (n.d.-a). Singapore unemployment rate. MacroTrends. Retrieved July 5, 2025, from [https://www.macrotrends.net/global-metrics/countries/sgp/singapore/unemployment-rate](https://www.macrotrends.net/global-metrics/countries/sgp/singapore/unemployment-rate){target="_blank"}
-
-MacroTrends. (n.d.-b). Singapore population. MacroTrends. Retrieved July 5, 2025, from [https://www.macrotrends.net/global-metrics/countries/sgp/singapore/population](https://www.macrotrends.net/global-metrics/countries/sgp/singapore/population){target="_blank"}
-
-Singapore Department of Statistics. (n.d.). Population by age group, sex and type of locality, 2023 [Table M810091]. Singapore Department of Statistics. Retrieved July 5, 2025, from [https://tablebuilder.singstat.gov.sg/table/TS/M810091](https://tablebuilder.singstat.gov.sg/table/TS/M810091){target="_blank"}
-
-Tan, T. (2024a, March 11). Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time. The Straits Times. [https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time](https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time){target="_blank"}
-
-Tan, T. (2024b, June 30). Why the fertility rate doesn’t capture socio-economic or cultural trends. The Straits Times. [https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends](https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends){target="_blank"}

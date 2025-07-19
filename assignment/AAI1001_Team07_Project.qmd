@@ -918,153 +918,416 @@ ggplot() +
 ```
 
 ## Interactive Dashboard
+this code allows for clicking of the legend trace and labels to filter the data. but it has the ("label",1) naming issue
 
-```{r interactive-dashboard, echo=TRUE}
-# Prepare data for visualisation
-viz_data <- final_dataset |>
+```{r interactive-agebanded-dashboard, echo=TRUE}
+# 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
+agg_counts <- final_dataset |>
   group_by(year, marital_status, labour_status) |>
-  summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(
+    status = fct_inorder(paste(marital_status, labour_status, sep = " / "))
+  )
 
-# Create shared data for crosstalk
-shared_data <- SharedData$new(viz_data, group = "labour_status_selection")
-
-# Filter widget
-filter_widget <- filter_select(
-  id = "labour_status_filter",
-  label = "Select Labour Status:",
-  sharedData = shared_data,
-  group = ~labour_status
+# 2. Crosstalk SharedData & filter
+shared_counts <- SharedData$new(agg_counts, group = "labour_status_ab")
+filter_ab <- filter_select(
+  id         = "labour_ab_filter",
+  label      = "Select Labour Status:",
+  sharedData = shared_counts,
+  group      = ~labour_status
 )
 
-# Enhanced visualisation with better scaling
-fertility_line_data <- final_dataset |>
-  filter(age_band == "All") |>
-  select(year, fertility_rate) |>
-  distinct()
+# 3. Fertility lines by age_band (excluding the “All” total)
+fertility_ab <- final_dataset |>
+  filter(age_band != "All") |>
+  distinct(year, age_band, fertility_rate)
 
-# Calculate scaling factor more intelligently
-max_count <- max(viz_data$count, na.rm = TRUE)
-max_fertility <- max(fertility_line_data$fertility_rate, na.rm = TRUE)
-scale_factor <- (max_count * 0.6) / max_fertility
+# 4. Compute scale_factor so that max(fertility_rate) → max(count)
+max_count     <- max(agg_counts$count,             na.rm = TRUE)
+max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
+scale_factor  <- max_count / max_fertility
 
-# Create the main plot
-p_main <- ggplot() +
-  # Labour force bars
+# 5. Build the ggplot
+p_ab <- ggplot() +
   geom_col(
-    data = shared_data,
-    aes(x = year, y = count, fill = marital_status, 
-        text = paste("Year:", year, "<br>",
-                    "Marital Status:", tools::toTitleCase(gsub("_", " ", marital_status)), "<br>",
-                    "Count:", comma(count))),
-    position = position_dodge(preserve = "single"),
+    data = shared_counts,
+    aes(
+      x    = year,
+      y    = count,
+      fill = status,
+      group = status,
+      text = paste0(
+        "Year: ", year,
+        "<br>Status: ", tools::toTitleCase(gsub("_"," ", status)),
+        "<br>Count: ", comma(count)
+      )
+    ),
+    position = position_dodge(width = 0.8),
+    colour   = "white",
+    size     = 0.2,
+    alpha    = 0.8
+  ) +
+  geom_line(
+    data = fertility_ab,
+    aes(
+      x      = year,
+      y      = fertility_rate * scale_factor,
+      colour = age_band,
+      group  = age_band,
+      text   = paste0(
+        "Year: ", year,
+        "<br>Age band: ", age_band,
+        "<br>Fertility: ", round(fertility_rate,2)
+      )
+    ),
+    size  = 0.8,
     alpha = 0.8
   ) +
-  # Fertility rate line
-  geom_line(
-    data = fertility_line_data,
-    aes(x = year, y = fertility_rate * scale_factor, group = 1),
-    color = "#e74c3c", size = 1, alpha = 0.9
-  ) +
   geom_point(
-    data = fertility_line_data,
-    aes(x = year, y = fertility_rate * scale_factor,
-        text = paste("Year:", year, "<br>",
-                    "Total Fertility Rate:", round(fertility_rate, 2))),
-    color = "#c0392b", size = 1
+    data = fertility_ab,
+    aes(
+      x      = year,
+      y      = fertility_rate * scale_factor,
+      colour = age_band,
+      group  = age_band,
+      text   = paste0(
+        "Year: ", year,
+        "<br>Age band: ", age_band,
+        "<br>Fertility: ", round(fertility_rate,2)
+      )
+    ),
+    size = 1,
+    show.legend = FALSE  # Hide points in legend
   ) +
-  # Scales and labels
   scale_y_continuous(
-    name = "Female Population (thousands)",
-    sec.axis = sec_axis(~ . / scale_factor, 
-                       name = "Total Fertility Rate",
-                       labels = function(x) round(x, 1))
+    name   = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(
+      transform = ~ . / scale_factor,
+      name      = "Fertility Rate (per thousand females)",
+      labels    = label_number(accuracy = 0.1)
+    )
   ) +
-  scale_fill_brewer(
+  scale_fill_manual(
+    name   = "Marital Status / Labour Status",
+    values = c(
+      "married / labour_force"                  = "green3",
+      "married / outside_labour_force"          = "darkgreen",
+      "single / labour_force"                   = "red2",
+      "single / outside_labour_force"           = "darkred",
+      "widowed_divorced / labour_force"         = "blue1",
+      "widowed_divorced / outside_labour_force" = "blue4"
+    )
+  ) +
+  scale_colour_brewer(
     palette = "Set2",
-    name = "Marital Status",
-    labels = function(x) tools::toTitleCase(gsub("_", " ", x))
+    name    = "Age Band"
   ) +
   labs(
-    title = "Singapore's Fertility Crisis: Labour Force vs Fertility Rate",
-    subtitle = "Interactive visualisation showing the relationship between female labour participation and fertility (1990-2020)",
-    x = "Year",
-    caption = "Data sources: SingStat, data.gov.sg | Red line shows Total Fertility Rate"
+    title    = "Age‐Banded Fertility Rates vs Female Labour Counts",
+    subtitle = "Bars by Marital & Labour Status; Lines by Age Band",
+    x        = "Year",
+    caption  = "Data: SingStat & data.gov.sg"
   ) +
-  theme_minimal() +
+  theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray60"),
-    axis.title = element_text(face = "bold"),
-    legend.position = "bottom",
-    legend.title = element_text(face = "bold"),
+    plot.title       = element_text(face = "bold", size = 12),
+    plot.subtitle    = element_text(size = 12, color = "gray60"),
+    axis.title       = element_text(face = "bold", size = 6),
+    legend.position  = "bottom",
     panel.grid.minor = element_blank()
   )
 
-# Convert to interactive
-interactive_plot <- ggplotly(p_main, tooltip = "text") |>
+# 6. Convert to Plotly with split = ~status so bars become 6 interactive traces
+interactive_ab <- ggplotly(
+  p_ab,
+  tooltip = "text",
+  split   = ~status
+) %>%
   layout(
-    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.15),
-    margin = list(b = 100, t = 80),
-    annotations = list(
-      x = 0.5, y = 1.05, xref = "paper", yref = "paper",
-      text = "<b>Singapore's Fertility Crisis: Labour Force vs Fertility Rate</b>",
-      showarrow = FALSE, font = list(size = 16)
+    legend = list(
+      orientation = "h",
+      x           = 0.5,
+      xanchor     = "center",
+      y           = -0.25,
+      font        = list(size = 8),
+      title       = list(
+        text = "Marital Status / Labour Status",
+        font = list(size = 10)
+      ),
+      itemwidth   = 70
+    ),
+    margin = list(
+      l = 80, r = 80, b = 140, t = 80
     )
   )
 
-# Display the dashboard
-tagList(
-  div(style = "margin-bottom: 20px;",
-      h3("Interactive Labour Force Analysis"),
-      p("Use the dropdown below to switch between labour force participation and those outside the labour force. 
-        The bars show female population by marital status, while the red line shows the total fertility rate trend.")
-  ),
-  filter_widget,
-  interactive_plot
+# 7. Clean up legend names using direct trace modification
+status_map <- c(
+  "married / labour_force" = "Married – In Labour Force",
+  "married / outside_labour_force" = "Married – Outside Labour Force",
+  "single / labour_force" = "Single – In Labour Force",
+  "single / outside_labour_force" = "Single – Outside Labour Force",
+  "widowed_divorced / labour_force" = "Divorced/Widowed – In Labour Force",
+  "widowed_divorced / outside_labour_force" = "Divorced/Widowed – Outside Labour Force"
 )
 
-# Age-specific fertility trends
-age_specific_data <- final_dataset |>
+# Get unique age bands from fertility data
+age_bands <- unique(fertility_ab$age_band)
+
+# Clean all trace names
+for(i in seq_along(interactive_ab$x$data)) {
+  trace <- interactive_ab$x$data[[i]]
+  if(!is.null(trace$name)) {
+    # Extract base name without Plotly's numbering
+    base_name <- sub("(.*),\\d+$", "\\1", trace$name)
+    
+    # Clean bar traces (marital/labour status)
+    if(base_name %in% names(status_map)) {
+      interactive_ab$x$data[[i]]$name <- status_map[base_name]
+      interactive_ab$x$data[[i]]$legendgroup <- status_map[base_name]
+    } 
+    # Clean line/point traces (age bands)
+    else if(base_name %in% age_bands) {
+      interactive_ab$x$data[[i]]$name <- base_name
+      interactive_ab$x$data[[i]]$legendgroup <- base_name
+    }
+    # Fallback for other traces
+    else {
+      interactive_ab$x$data[[i]]$name <- base_name
+      interactive_ab$x$data[[i]]$legendgroup <- base_name
+    }
+  }
+}
+
+# 8. Render
+tagList(
+  div(style = "margin-bottom:20px;",
+      h3("Interactive Age‐Banded Fertility Dashboard"),
+      p("Use the dropdown to filter bars by labour status.")
+  ),
+  filter_ab,
+  interactive_ab
+)
+```
+
+## Interactive Dashboard but with custom legend label
+this one you cannot click on the legend traces and label but at least it looks nice. need to implement interactivity through the dropdown
+```{r}
+
+# 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
+agg_counts <- final_dataset |>
+  group_by(year, marital_status, labour_status) |>
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(
+    status = fct_inorder(paste(marital_status, labour_status, sep = " / "))
+  )
+
+# 2. Crosstalk SharedData & filter
+shared_counts <- SharedData$new(agg_counts, group = "labour_status_ab")
+filter_ab <- filter_select(
+  id         = "labour_ab_filter",
+  label      = "Select Labour Status:",
+  sharedData = shared_counts,
+  group      = ~labour_status
+)
+
+# 3. Fertility lines by age_band (excluding the “All” total)
+fertility_ab <- final_dataset |>
   filter(age_band != "All") |>
-  group_by(year, age_band) |>
-  summarise(fertility_rate = first(fertility_rate), .groups = "drop")
+  distinct(year, age_band, fertility_rate)
 
-p_age_specific <- ggplot(age_specific_data, aes(x = year, y = fertility_rate, color = age_band)) +
-  geom_line(size = 1.2, alpha = 0.8) +
-  geom_point(size = 1, alpha = 0.6) +
-  scale_color_viridis_d(name = "Age Group") +
+# 4. Compute scale_factor so that max(fertility_rate) → max(count)
+max_count     <- max(agg_counts$count,             na.rm = TRUE)
+max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
+scale_factor  <- max_count / max_fertility
+
+# 5. Build the ggplot
+p_ab <- ggplot() +
+  geom_col(
+    data = shared_counts,
+    aes(
+      x           = year,
+      y           = count,
+      fill        = status,
+      group       = status,
+      legendgroup = status,
+      text        = paste0(
+        "Year: ", year,
+        "<br>Status: ", tools::toTitleCase(gsub("_"," ", status)),
+        "<br>Count: ", comma(count)
+      )
+    ),
+    position = position_dodge(width = 0.8),
+    colour   = "white",
+    size     = 0.2,
+    alpha    = 0.8
+  ) +
+  geom_line(
+    data = fertility_ab,
+    aes(
+      x           = year,
+      y           = fertility_rate * scale_factor,
+      colour      = age_band,
+      group       = age_band,
+      legendgroup = age_band,
+      text        = paste0(
+        "Year: ", year,
+        "<br>Age band: ", age_band,
+        "<br>Fertility: ", round(fertility_rate,2)
+      )
+    ),
+    size = 0.8,
+    alpha = 0.8
+  ) +
+  geom_point(
+    data = fertility_ab,
+    aes(
+      x      = year,
+      y      = fertility_rate * scale_factor,
+      colour = age_band,
+      group  = age_band,
+      legendgroup = age_band,
+      text   = paste0(
+        "Year: ", year,
+        "<br>Age band: ", age_band,
+        "<br>Fertility: ", round(fertility_rate,2)
+      )
+    ),
+    size = 1
+  ) +
+  scale_y_continuous(
+    name   = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(
+      transform = ~ . / scale_factor,
+      name      = "Fertility Rate (per thousand females)",
+      labels    = label_number(accuracy = 0.1)
+    )
+  ) +
+  scale_fill_manual(
+    name   = "Marital Status / Labour Status",
+    values = c(
+      "married / labour_force"                  = "green3",
+      "married / outside_labour_force"          = "darkgreen",
+      "single / labour_force"                   = "red2",
+      "single / outside_labour_force"           = "darkred",
+      "widowed_divorced / labour_force"         = "blue1",
+      "widowed_divorced / outside_labour_force" = "blue4"
+    )
+  ) +
+  scale_colour_brewer(
+    palette = "Set2",
+    name    = "Age Band"
+  ) +
   labs(
-    title = "Age-Specific Fertility Rate Trends",
-    subtitle = "Fertility rates by age group show different patterns of decline",
-    x = "Year",
-    y = "Fertility Rate (per 1,000 females)"
+    title    = "Age‐Banded Fertility Rates vs Female Labour Counts",
+    subtitle = "Bars by Marital & Labour Status; Lines by Age Band",
+    x        = "Year",
+    caption  = "Data: SingStat & data.gov.sg"
   ) +
-  theme_minimal() +
+  theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(face = "bold", size = 14),
-    legend.position = "right"
-  ) +
-  guides(color = guide_legend(override.aes = list(size = 3)))
+    plot.title       = element_text(face = "bold", size = 12),
+    plot.subtitle    = element_text(size = 12, color = "gray60"),
+    axis.title       = element_text(face = "bold", size = 6),
+    legend.position  = "bottom",
+    panel.grid.minor = element_blank()
+  )
 
-print(p_age_specific)
+# 6. Convert to Plotly
+interactive_ab <- ggplotly(p_ab, tooltip = "text") %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x           = 0.5,
+      xanchor     = "center",
+      y           = -0.25,
+      font        = list(size =  8 ),           # items
+      title       = list(                           # title styling
+        text = "Marital Status / Labour Status",
+        font = list(size = 10 )
+      ),
+      itemwidth   = 70                              # force wrapping
+    ),
+    margin = list(
+      l = 80,    # left
+      r = 80,    # right
+      b = 140,   # bottom (more for 2‐line legend)
+      t = 80
+    )
+  )
 
-# Calculate age group contributions
-age_contributions <- age_specific_data |>
-  group_by(age_band) |>
-  summarise(
-    avg_fertility = mean(fertility_rate, na.rm = TRUE),
-    decline_1990_2020 = first(fertility_rate) - last(fertility_rate),
-    pct_decline = (first(fertility_rate) - last(fertility_rate)) / first(fertility_rate) * 100,
-    .groups = "drop"
-  ) |>
-  arrange(desc(avg_fertility))
+# 7. Turn off the built‑in legend entries
+for(i in seq_along(interactive_ab$x$data)) {
+  interactive_ab$x$data[[i]]$showlegend <- FALSE
+}
 
-kable(age_contributions, 
-      digits = 1,
-      caption = "Age-Specific Fertility Analysis (1990-2020)",
-      col.names = c("Age Group", "Average Fertility Rate", "Absolute Decline", "Percentage Decline (%)"),
-      booktabs = TRUE) |>
-  kable_styling(bootstrap_options = c("striped", "hover"))
+# 8. Create custom legend traces
+
+# Status legend entries (squares)
+status_labels <- c(
+  "Married – In Labour Force",
+  "Married – Outside Labour Force",
+  "Single – In Labour Force",
+  "Single – Outside Labour Force",
+  "Divorced/Widowed – In Labour Force",
+  "Divorced/Widowed – Outside Labour Force"
+)
+status_colors <- c("green3", "darkgreen", "red2", "darkred", "blue1", "blue4")
+
+status_traces <- lapply(seq_along(status_labels), function(i) {
+  list(
+    name       = status_labels[i],
+    legendgroup= status_labels[i],
+    x          = NA,  y = NA,
+    showlegend = TRUE,
+    type       = "scatter",
+    mode       = "markers",
+    marker     = list(
+      color  = status_colors[i],
+      symbol = "square",
+      size   = 6
+    )
+  )
+})
+
+# Age‐band legend entries (line swatches)
+age_bands  <- c("15-19","20-24","25-29","30-34","35-39","40-44","45-49")
+age_colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
+
+age_traces <- lapply(seq_along(age_bands), function(i) {
+  list(
+    name       = age_bands[i],
+    legendgroup= age_bands[i],
+    x          = NA,  y = NA,
+    showlegend = TRUE,
+    type       = "scatter",
+    mode       = "lines",
+    line       = list(
+      color = age_colors[i],
+      width = 2
+    )
+  )
+})
+
+# 9. Append custom legend traces
+interactive_ab$x$data <- c(
+  interactive_ab$x$data,
+  status_traces,
+  age_traces
+)
+
+# 10. Render
+tagList(
+  div(style = "margin-bottom:20px;",
+      h3("Interactive Age‐Banded Fertility Dashboard"),
+      p("Use the dropdown to filter bars by labour status.")
+  ),
+  filter_ab,
+  interactive_ab
+)
 ```
 
 ---
@@ -1073,70 +1336,9 @@ kable(age_contributions,
 
 ## Summary Statistics
 
-```{r summary-insights, echo=FALSE}
-# Calculate key insights
-key_insights <- final_dataset |>
-  filter(age_band == "All") |>
-  group_by(year) |>
-  summarise(
-    fertility_rate = first(fertility_rate),
-    total_labour_force = sum(count[labour_status == "labour_force"], na.rm = TRUE),
-    total_outside_labour = sum(count[labour_status == "outside_labour_force"], na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  mutate(
-    labour_participation_rate = total_labour_force / (total_labour_force + total_outside_labour)
-  ) |>
-  summarise(
-    fertility_decline = (first(fertility_rate) - last(fertility_rate)) / first(fertility_rate) * 100,
-    labour_participation_increase = (last(labour_participation_rate) - first(labour_participation_rate)) * 100,
-    correlation = cor(fertility_rate, labour_participation_rate, use = "complete.obs")
-  )
-
-cat("🔍 KEY FINDINGS:\n\n")
-cat("1. FERTILITY CRISIS MAGNITUDE:\n")
-cat("   • Fertility rate declined by", round(key_insights$fertility_decline, 1), "% from 1990 to 2020\n")
-cat("   • Singapore's fertility rate is now among the world's lowest\n\n")
-
-cat("2. LABOUR FORCE PARTICIPATION:\n")
-cat("   • Female labour participation increased by", round(key_insights$labour_participation_increase, 1), "percentage points\n")
-cat("   • Strong negative correlation with fertility (r =", round(key_insights$correlation, 2), ")\n\n")
-
-cat("3. AGE-SPECIFIC PATTERNS:\n")
-cat("   • 25-29 age group remains peak fertility years but shows steep decline\n")
-cat("   • Delayed childbearing evident across all age groups\n\n")
-
-cat("4. POLICY IMPLICATIONS:\n")
-cat("   • Work-life balance policies needed urgently\n")
-cat("   • Childcare support systems require expansion\n")
-cat("   • Economic incentives may need restructuring\n")
-```
 
 ## Statistical Significance Testing
 
-```{r statistical-tests, echo=TRUE}
-# Perform trend analysis
-trend_test_data <- final_dataset |>
-  filter(age_band == "All") |>
-  group_by(year) |>
-  summarise(
-    fertility_rate = first(fertility_rate),
-    total_population = sum(count, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  filter(!is.na(fertility_rate))
-
-# Linear regression to test trend significance
-fertility_trend_model <- lm(fertility_rate ~ year, data = trend_test_data)
-trend_summary <- tidy(fertility_trend_model)
-
-cat("📊 STATISTICAL SIGNIFICANCE TESTING:\n\n")
-cat("Linear Trend Analysis (Fertility Rate vs Year):\n")
-cat("• Slope coefficient:", round(trend_summary$estimate[2], 4), "\n")
-cat("• P-value:", formatC(trend_summary$p.value[2], format = "e", digits = 2), "\n")
-cat("• R-squared:", round(summary(fertility_trend_model)$r.squared, 3), "\n")
-cat("• Conclusion: Trend is", ifelse(trend_summary$p.value[2] < 0.05, "STATISTICALLY SIGNIFICANT", "NOT SIGNIFICANT"), "\n")
-```
 
 ---
 

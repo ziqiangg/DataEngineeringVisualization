@@ -918,7 +918,7 @@ ggplot() +
 ```
 
 ## Interactive Dashboard
-this code allows for clicking of the legend trace and labels to filter the data. but it has the ("label",1) naming issue
+this code allows for clicking of the legend trace and labels to filter the data. but it has the ("label",1) naming issue. i gave up on this, theres no way to use ggplot2 and ggplotly to fix the legend. must use plotly or shiny or somehing else. I am trying to create a custom legend below and then slowly integrate the dropdown across all variables later in the next code chunk.
 
 ```{r interactive-agebanded-dashboard, echo=TRUE}
 # 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
@@ -929,37 +929,63 @@ agg_counts <- final_dataset |>
     status = fct_inorder(paste(marital_status, labour_status, sep = " / "))
   )
 
-# 2. Crosstalk SharedData & filter
-shared_counts <- SharedData$new(agg_counts, group = "labour_status_ab")
-filter_ab <- filter_select(
-  id         = "labour_ab_filter",
-  label      = "Select Labour Status:",
-  sharedData = shared_counts,
-  group      = ~labour_status
+# 2. Create Crosstalk shared dataset with proper key
+shared_counts <- SharedData$new(
+  agg_counts, 
+  key = ~interaction(marital_status, labour_status), 
+  group = "labour_group"
 )
 
-# 3. Fertility lines by age_band (excluding the “All” total)
+# 3. Create separate filters for marital and labour status
+filter_marital <- filter_select(
+  id    = "marital_filter",
+  label = "Select Marital Status:",
+  sharedData = shared_counts,
+  group = ~marital_status
+)
+
+filter_labour <- filter_select(
+  id    = "labour_filter",
+  label = "Select Labour Status:",
+  sharedData = shared_counts,
+  group = ~labour_status
+)
+
+# 4. Fertility lines by age_band (excluding "All" total)
 fertility_ab <- final_dataset |>
   filter(age_band != "All") |>
   distinct(year, age_band, fertility_rate)
 
-# 4. Compute scale_factor so that max(fertility_rate) → max(count)
-max_count     <- max(agg_counts$count,             na.rm = TRUE)
+# Create separate shared data for lines
+shared_lines <- SharedData$new(fertility_ab, key = ~age_band, group = "age_group")
+
+# 5. Age band filter
+filter_age <- filter_select(
+  id    = "age_filter",
+  label = "Select Age Band:",
+  sharedData = shared_lines,
+  group = ~age_band
+)
+
+# 6. Compute scale_factor
+max_count     <- max(agg_counts$count, na.rm = TRUE)
 max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
 scale_factor  <- max_count / max_fertility
 
-# 5. Build the ggplot
+# 7. Build the ggplot
 p_ab <- ggplot() +
+  # Bars (using shared_counts)
   geom_col(
     data = shared_counts,
     aes(
-      x    = year,
-      y    = count,
-      fill = status,
+      x     = year,
+      y     = count,
+      fill  = status,
       group = status,
-      text = paste0(
+      text  = paste0(
         "Year: ", year,
-        "<br>Status: ", tools::toTitleCase(gsub("_"," ", status)),
+        "<br>Marital: ", marital_status,
+        "<br>Labour: ", labour_status,
         "<br>Count: ", comma(count)
       )
     ),
@@ -968,14 +994,15 @@ p_ab <- ggplot() +
     size     = 0.2,
     alpha    = 0.8
   ) +
+  # Lines (using shared_lines)
   geom_line(
-    data = fertility_ab,
+    data = shared_lines,
     aes(
-      x      = year,
-      y      = fertility_rate * scale_factor,
-      colour = age_band,
-      group  = age_band,
-      text   = paste0(
+      x     = year,
+      y     = fertility_rate * scale_factor,
+      colour= age_band,
+      group = age_band,
+      text  = paste0(
         "Year: ", year,
         "<br>Age band: ", age_band,
         "<br>Fertility: ", round(fertility_rate,2)
@@ -984,22 +1011,22 @@ p_ab <- ggplot() +
     size  = 0.8,
     alpha = 0.8
   ) +
+  # Points
   geom_point(
-    data = fertility_ab,
+    data = shared_lines,
     aes(
       x      = year,
       y      = fertility_rate * scale_factor,
       colour = age_band,
-      group  = age_band,
       text   = paste0(
         "Year: ", year,
         "<br>Age band: ", age_band,
         "<br>Fertility: ", round(fertility_rate,2)
       )
     ),
-    size = 1,
-    show.legend = FALSE  # Hide points in legend
+    size = 1
   ) +
+  # Dual axis setup
   scale_y_continuous(
     name   = "Female Population (thousands)",
     labels = comma,
@@ -1009,8 +1036,9 @@ p_ab <- ggplot() +
       labels    = label_number(accuracy = 0.1)
     )
   ) +
+  # Color scales
   scale_fill_manual(
-    name   = "Marital Status / Labour Status",
+    name   = "Marital & Labour Status",
     values = c(
       "married / labour_force"                  = "green3",
       "married / outside_labour_force"          = "darkgreen",
@@ -1024,6 +1052,7 @@ p_ab <- ggplot() +
     palette = "Set2",
     name    = "Age Band"
   ) +
+  # Labels and theme
   labs(
     title    = "Age‐Banded Fertility Rates vs Female Labour Counts",
     subtitle = "Bars by Marital & Labour Status; Lines by Age Band",
@@ -1035,85 +1064,106 @@ p_ab <- ggplot() +
     plot.title       = element_text(face = "bold", size = 12),
     plot.subtitle    = element_text(size = 12, color = "gray60"),
     axis.title       = element_text(face = "bold", size = 6),
-    legend.position  = "bottom",
+    legend.position  = "none",  # We'll use custom legend instead
     panel.grid.minor = element_blank()
   )
 
-# 6. Convert to Plotly with split = ~status so bars become 6 interactive traces
-interactive_ab <- ggplotly(
-  p_ab,
-  tooltip = "text",
-  split   = ~status
-) %>%
+# 8. Convert to Plotly
+interactive_ab <- ggplotly(p_ab, tooltip = "text") %>%
+  layout(
+    margin = list(l = 80, r = 80, b = 200, t = 80)  # Extra bottom space
+  )
+
+# 9. Disable built-in legend for data traces
+for(i in seq_along(interactive_ab$x$data)) {
+  interactive_ab$x$data[[i]]$showlegend <- FALSE
+}
+
+# 10. Create custom legend traces
+# Marital/Labour status legend (squares)
+status_combinations <- list(
+  list(name = "Married - In Labour", color = "green3", key = "married / labour_force"),
+  list(name = "Married - Not Working", color = "darkgreen", key = "married / outside_labour_force"),
+  list(name = "Single - In Labour", color = "red2", key = "single / labour_force"),
+  list(name = "Single - Not Working", color = "darkred", key = "single / outside_labour_force"),
+  list(name = "Divorced/Widowed - In Labour", color = "blue1", key = "widowed_divorced / labour_force"),
+  list(name = "Divorced/Widowed - Not Working", color = "blue4", key = "widowed_divorced / outside_labour_force")
+)
+
+status_traces <- lapply(status_combinations, function(item) {
+  list(
+    name       = item$name,
+    legendgroup= "status_legend",
+    x          = c(NA),  # Single invisible point
+    y          = c(NA),
+    type       = "scatter",
+    mode       = "markers",
+    marker     = list(
+      color  = item$color,
+      symbol = "square",
+      size   = 8
+    ),
+    showlegend = TRUE
+  )
+})
+
+# Age‐band legend (lines)
+age_bands  <- c("15-19","20-24","25-29","30-34","35-39","40-44","45-49")
+age_colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
+
+age_traces <- lapply(seq_along(age_bands), function(i) {
+  list(
+    name       = age_bands[i],
+    legendgroup= "age_legend",
+    x          = c(NA),  # Single invisible point
+    y          = c(NA),
+    type       = "scatter",
+    mode       = "lines",
+    line       = list(color = age_colors[i], width = 3),
+    showlegend = TRUE
+  )
+})
+
+# 11. Append custom legend traces
+interactive_ab$x$data <- c(
+  interactive_ab$x$data,
+  status_traces,
+  age_traces
+)
+
+# 12. Configure legend layout
+interactive_ab <- interactive_ab %>%
   layout(
     legend = list(
       orientation = "h",
-      x           = 0.5,
-      xanchor     = "center",
-      y           = -0.25,
-      font        = list(size = 8),
-      title       = list(
-        text = "Marital Status / Labour Status",
-        font = list(size = 10)
-      ),
-      itemwidth   = 70
-    ),
-    margin = list(
-      l = 80, r = 80, b = 140, t = 80
+      y = -0.25,  # Position below chart
+      x = 0.5,
+      xanchor = "center",
+      traceorder = "normal",
+      itemsizing = "constant",
+      font = list(size = 10),
+      itemwidth = 30
     )
   )
 
-# 7. Clean up legend names using direct trace modification
-status_map <- c(
-  "married / labour_force" = "Married – In Labour Force",
-  "married / outside_labour_force" = "Married – Outside Labour Force",
-  "single / labour_force" = "Single – In Labour Force",
-  "single / outside_labour_force" = "Single – Outside Labour Force",
-  "widowed_divorced / labour_force" = "Divorced/Widowed – In Labour Force",
-  "widowed_divorced / outside_labour_force" = "Divorced/Widowed – Outside Labour Force"
-)
-
-# Get unique age bands from fertility data
-age_bands <- unique(fertility_ab$age_band)
-
-# Clean all trace names
-for(i in seq_along(interactive_ab$x$data)) {
-  trace <- interactive_ab$x$data[[i]]
-  if(!is.null(trace$name)) {
-    # Extract base name without Plotly's numbering
-    base_name <- sub("(.*),\\d+$", "\\1", trace$name)
-    
-    # Clean bar traces (marital/labour status)
-    if(base_name %in% names(status_map)) {
-      interactive_ab$x$data[[i]]$name <- status_map[base_name]
-      interactive_ab$x$data[[i]]$legendgroup <- status_map[base_name]
-    } 
-    # Clean line/point traces (age bands)
-    else if(base_name %in% age_bands) {
-      interactive_ab$x$data[[i]]$name <- base_name
-      interactive_ab$x$data[[i]]$legendgroup <- base_name
-    }
-    # Fallback for other traces
-    else {
-      interactive_ab$x$data[[i]]$name <- base_name
-      interactive_ab$x$data[[i]]$legendgroup <- base_name
-    }
-  }
-}
-
-# 8. Render
+# 13. Render final visualization
 tagList(
   div(style = "margin-bottom:20px;",
-      h3("Interactive Age‐Banded Fertility Dashboard"),
-      p("Use the dropdown to filter bars by labour status.")
+      h3("Interactive Fertility Dashboard"),
+      p("Use dropdowns to filter by marital status, labour status, and age band")
   ),
-  filter_ab,
+  div(style = "display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;",
+      div(style = "flex: 1; min-width: 200px;", filter_marital),
+      div(style = "flex: 1; min-width: 200px;", filter_labour),
+      div(style = "flex: 1; min-width: 200px;", filter_age)
+  ),
   interactive_ab
 )
 ```
 
+
 ## Interactive Dashboard but with custom legend label
-this one you cannot click on the legend traces and label but at least it looks nice. need to implement interactivity through the dropdown
+so far so good, need to implement genuine interactivity now.
 ```{r}
 
 # 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
@@ -1133,7 +1183,7 @@ filter_ab <- filter_select(
   group      = ~labour_status
 )
 
-# 3. Fertility lines by age_band (excluding the “All” total)
+# 3. Fertility lines by age_band (excluding the "All" total)
 fertility_ab <- final_dataset |>
   filter(age_band != "All") |>
   distinct(year, age_band, fertility_rate)
@@ -1209,12 +1259,12 @@ p_ab <- ggplot() +
   scale_fill_manual(
     name   = "Marital Status / Labour Status",
     values = c(
-      "married / labour_force"                  = "green3",
-      "married / outside_labour_force"          = "darkgreen",
-      "single / labour_force"                   = "red2",
-      "single / outside_labour_force"           = "darkred",
-      "widowed_divorced / labour_force"         = "blue1",
-      "widowed_divorced / outside_labour_force" = "blue4"
+      "married / labour_force"                  = "#00CD00",  # green3
+      "married / outside_labour_force"          = "#006400",  # darkgreen
+      "single / labour_force"                   = "#EE0000",  # red2
+      "single / outside_labour_force"           = "#8B0000",  # darkred
+      "widowed_divorced / labour_force"         = "#0000FF",  # blue1
+      "widowed_divorced / outside_labour_force" = "#00008B"   # blue4
     )
   ) +
   scale_colour_brewer(
@@ -1244,29 +1294,36 @@ interactive_ab <- ggplotly(p_ab, tooltip = "text") %>%
       x           = 0.5,
       xanchor     = "center",
       y           = -0.25,
-      font        = list(size =  8 ),           # items
-      title       = list(                           # title styling
+      font        = list(size = 8),
+      title       = list(
         text = "Marital Status / Labour Status",
-        font = list(size = 10 )
+        font = list(size = 10)
       ),
-      itemwidth   = 70                              # force wrapping
+      itemwidth   = 70
     ),
     margin = list(
       l = 80,    # left
       r = 80,    # right
-      b = 140,   # bottom (more for 2‐line legend)
+      b = 140,   # bottom
       t = 80
     )
   )
 
-# 7. Turn off the built‑in legend entries
+# 7. Turn off built-in legends
 for(i in seq_along(interactive_ab$x$data)) {
   interactive_ab$x$data[[i]]$showlegend <- FALSE
 }
 
-# 8. Create custom legend traces
+# 8. Define EXACT color mapping for status categories
+status_colors <- c(
+  "married / labour_force"                  = "#00CD00",  # green3
+  "married / outside_labour_force"          = "#006400",  # darkgreen
+  "single / labour_force"                   = "#EE0000",  # red2
+  "single / outside_labour_force"           = "#8B0000",  # darkred
+  "widowed_divorced / labour_force"         = "#0000FF",  # blue1
+  "widowed_divorced / outside_labour_force" = "#00008B"   # blue4
+)
 
-# Status legend entries (squares)
 status_labels <- c(
   "Married – In Labour Force",
   "Married – Outside Labour Force",
@@ -1275,51 +1332,71 @@ status_labels <- c(
   "Divorced/Widowed – In Labour Force",
   "Divorced/Widowed – Outside Labour Force"
 )
-status_colors <- c("green3", "darkgreen", "red2", "darkred", "blue1", "blue4")
 
-status_traces <- lapply(seq_along(status_labels), function(i) {
+# 9. Create status legend using exact hex colors
+status_traces <- lapply(1:6, function(i) {
   list(
-    name       = status_labels[i],
-    legendgroup= status_labels[i],
-    x          = NA,  y = NA,
-    showlegend = TRUE,
-    type       = "scatter",
-    mode       = "markers",
-    marker     = list(
-      color  = status_colors[i],
+    x = NA, 
+    y = NA,
+    name = status_labels[i],
+    type = "scatter",
+    mode = "markers",
+    marker = list(
+      color = status_colors[i],
       symbol = "square",
-      size   = 6
-    )
+      size = 8
+    ),
+    showlegend = TRUE,
+    hoverinfo = "none"  # Prevent hover info on legend items
   )
 })
 
-# Age‐band legend entries (line swatches)
-age_bands  <- c("15-19","20-24","25-29","30-34","35-39","40-44","45-49")
+# 10. Create age-band legend with explicit colors
+age_bands <- c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")
 age_colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
 
 age_traces <- lapply(seq_along(age_bands), function(i) {
   list(
-    name       = age_bands[i],
-    legendgroup= age_bands[i],
-    x          = NA,  y = NA,
+    x = NA, 
+    y = NA,
+    name = age_bands[i],
+    type = "scatter",
+    mode = "lines",
+    line = list(color = age_colors[i], width = 2),
     showlegend = TRUE,
-    type       = "scatter",
-    mode       = "lines",
-    line       = list(
-      color = age_colors[i],
-      width = 2
-    )
+    hoverinfo = "none"  # Prevent hover info on legend items
   )
 })
 
-# 9. Append custom legend traces
+# 11. Append custom legend traces
 interactive_ab$x$data <- c(
   interactive_ab$x$data,
   status_traces,
   age_traces
 )
 
-# 10. Render
+# 12. Adjust layout for better legend display
+interactive_ab <- interactive_ab %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.3,  # Move legend lower
+      font = list(size = 8),
+      traceorder = "normal",  # Keep specified order
+      itemsizing = "constant", # Consistent item sizes
+      itemwidth = 30
+    ),
+    margin = list(
+      l = 80,
+      r = 80,
+      b = 180,  # Increase bottom margin for legend space
+      t = 80
+    )
+  )
+
+# 13. Render final visualization
 tagList(
   div(style = "margin-bottom:20px;",
       h3("Interactive Age‐Banded Fertility Dashboard"),

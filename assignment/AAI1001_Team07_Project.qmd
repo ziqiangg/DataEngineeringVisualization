@@ -75,15 +75,15 @@ Singapore's total fertility rate has plummeted to historic lows, dropping below 
 
 **Key Findings:**
 
-- Fertility rate declined by 41% from 1990 to 2020
+-   Fertility rate declined by 41% from 1990 to 2020
 
-- Female labour force participation increased by 89% over the same period
+-   Female labour force participation increased by 89% over the same period
 
-- The 25-29 age group shows the steepest fertility decline despite being peak childbearing years
+-   The 25-29 age group shows the steepest fertility decline despite being peak childbearing years
 
-- Strong negative correlation (-0.87) between labour force participation and fertility rates
+-   Strong negative correlation (-0.87) between labour force participation and fertility rates
 
----
+------------------------------------------------------------------------
 
 # Introduction
 
@@ -91,19 +91,16 @@ Singapore's total fertility rate has plummeted to historic lows, dropping below 
 
 Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that visualisations from [@tan2024a] neglect. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from [@singstat2023] as well as labour participation and marital status data from [@datagovsg2020a] and [@datagovsg2020b].
 
-
-**Disclaimer:**
-*To note that data for 1995, 2000 and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years due to the conduct of the Population Census 2000, General Household Surveys 1995 and 2005 by the Singapore Department of Statistics.*
-
+**Disclaimer:** *To note that data for 1995, 2000 and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years due to the conduct of the Population Census 2000, General Household Surveys 1995 and 2005 by the Singapore Department of Statistics.*
 
 ## Research Questions
 
-1. How do socioeconomic factors influence Singapore's fertility decline?
-2. What role does female labour force participation play in fertility decisions?
-3. Which age groups and marital statuses are most affected?
-4. Can we identify critical inflection points in the fertility decline?
+1.  How do socioeconomic factors influence Singapore's fertility decline?
+2.  What role does female labour force participation play in fertility decisions?
+3.  Which age groups and marital statuses are most affected?
+4.  Can we identify critical inflection points in the fertility decline?
 
----
+------------------------------------------------------------------------
 
 # Critical Analysis of Original Visualisation
 
@@ -175,7 +172,7 @@ gt_table
 
 The original visualisations focus on Singapore's total fertility rate (TFR) from 2019 to 2023, but fail to explore the socioeconomic factors driving the decline. Recent research by @tan2024b highlights the limitations of such visualisations, urging a deeper look into the role of rising singlehood and delayed marriage in influencing fertility trends.
 
----
+------------------------------------------------------------------------
 
 # Data Sources & Methodology
 
@@ -249,34 +246,32 @@ cat("Outside labour force data shape:", dim(not_working), "\n")
 ```
 
 ## Data Cleaning & Transformation
+
 The following steps will be taken to clean and reshape "`fertility`":
 
-- "`fertility`" tibble contains "na" strings which are not actually NA values, these points will need to be converted to NA values
+-   "`fertility`" tibble contains "na" strings which are not actually NA values, these points will need to be converted to NA values
 
-- fertility rate data from SingStat is in wide format with years as the columns, we will pivot long for year-wise plots
+-   fertility rate data from SingStat is in wide format with years as the columns, we will pivot long for year-wise plots
 
-- fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years after 1990 and up till 2022
+-   fertility rate data goes up till 2024, whereas the labour force data only goes up till 2022, we will filter the fertility rate data to only include years after 1990 and up till 2022
 
-- standardise age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)' and also keep Total Fertility Rate data (aggregated across all age bands)
+-   standardise age banding of fertility rate dataset to be consistent with labour force data. For example, "15-19" instead of "15 - 19 Years (Per Thousand Females)' and also keep Total Fertility Rate data (aggregated across all age bands)
 
-- filtered to include age specific fertility rates and the total fertility rate by year
+-   filtered to include age specific fertility rates and the total fertility rate by year
 
-- introduce Unit of Measurement (uom) column to indicate scaling for Total Fertility Rates and age banded fertility rates
-
-
+-   introduce Unit of Measurement (uom) column to indicate scaling for Total Fertility Rates and age banded fertility rates
 
 The following steps will be taken to clean and reshape "`not_working`":
 
-- standardise column names to the 7 (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) age bands to be consistent with fertility and remove extra bandings
+-   standardise column names to the 7 (15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49) age bands to be consistent with fertility and remove extra bandings
 
-- for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
+-   for labour datasets, divide labour_force values by 1000 to align with count (in thousands) y-axis variable
 
-- some outside_labour_force values are "-" which are not valid numerics, convert these to NA
+-   some outside_labour_force values are "-" which are not valid numerics, convert these to NA
 
-- rename age column to age_band to match `fertility`
+-   rename age column to age_band to match `fertility`
 
-- aggregate age bands to introduce "All" to represent population outside labour force by year and marital status only, this is so that we can introduce interactivity with Total Fertility Rate and fertility rates across age bands
-
+-   aggregate age bands to introduce "All" to represent population outside labour force by year and marital status only, this is so that we can introduce interactivity with Total Fertility Rate and fertility rates across age bands
 
 "work" tibble is cleaned in a similar way to "not_working".
 
@@ -357,12 +352,14 @@ not_working_clean <- bind_rows(not_working_clean, not_working_all)
 cat("✓ Data cleaning completed successfully\n")
 ```
 
----
+------------------------------------------------------------------------
 
 # Data Quality Assessment
 
 ## Missing Data Analysis
+
 Missing Data Summary:
+
 ```{r missing-data}
 # Check for missing data patterns
 missing_analysis <- list(
@@ -375,6 +372,7 @@ cat("Fertility data missing values:", sum(is.na(fertility_clean$fertility_rate))
 cat("Labour force data missing values:", sum(is.na(work_clean$labour_force)), "\n")
 cat("Outside labour force missing values:", sum(is.na(not_working_clean$outside_labour_force)), "\n")
 ```
+
 The missing values in the labour datasets are caused by combinations of variables that result in highly likely scenarios where the count is actually '0' such as the case of "widowed/divorced" in the age band of "15-19". However, we acknowledge that some more likely scenarios might be the case of missing data (eg. 2022, male, outside labour force, widowed/divorced, 35-39).
 
 ## Outlier Detection & Analysis
@@ -451,8 +449,6 @@ outlier_summary_gt <- outlier_summary |>
 outlier_summary_gt
 ```
 
-
-
 ## Outlier Visualisation
 
 ```{r fertility-outlier}
@@ -481,6 +477,7 @@ p_outliers <- ggplot(fertility_outliers,
 
 print(p_outliers)
 ```
+
 This shows that there is uncharacteristically high fertility rate in the 45-49 year old age group in recent times (2017-2020).
 
 ```{r labour-fem-outlier}
@@ -523,9 +520,10 @@ p_labour_outliers <- ggplot(work_outliers,
 print(p_labour_outliers)
 
 ```
+
 Majority of the outliers were single and occurred in the early 1990s.
 
----
+------------------------------------------------------------------------
 
 # Data Integration & Final Dataset
 
@@ -533,13 +531,13 @@ Majority of the outliers were single and occurred in the early 1990s.
 
 We will join the datasets together to create a single tibble that contains all the necessary information for our visualisation. The joined tibble will contain the following columns:
 
-- `year`: from 1991 to 2022
-- `age_band`: Age bands and "All" which is for total fertility rate
-- `marital_status`: Marital status of the data point
-- `fertility_rate`: Fertility rate by age band (per thousand females) and total fertility rate (per female)
-- `uom`: Fertility rate unit of measurement
-- `labour_status`: Labour status of the data point, either "labour_force" or "outside_labour_force"
-- `count`: Number of females either in workforce or outside workforce (in thousands)
+-   `year`: from 1991 to 2022
+-   `age_band`: Age bands and "All" which is for total fertility rate
+-   `marital_status`: Marital status of the data point
+-   `fertility_rate`: Fertility rate by age band (per thousand females) and total fertility rate (per female)
+-   `uom`: Fertility rate unit of measurement
+-   `labour_status`: Labour status of the data point, either "labour_force" or "outside_labour_force"
+-   `count`: Number of females either in workforce or outside workforce (in thousands)
 
 ### Filter to Female Population Only
 
@@ -621,7 +619,9 @@ final_dataset <- fertility_labour_joined |>
 ```
 
 ### Data Quality Validation
-Evaluate the `final_dataset` for total number of records, unique values in each column, presence of missing values ("NA") 
+
+Evaluate the `final_dataset` for total number of records, unique values in each column, presence of missing values ("NA")
+
 ```{r validation}
 #| echo: true
 #| eval: true
@@ -706,13 +706,14 @@ cat("✓ Created aggregated totals for comprehensive analysis\n")
 cat("Work data with totals shape:", dim(work_complete), "\n")
 cat("Not working data with totals shape:", dim(not_working_complete), "\n")
 ```
+
 ## Dataset Integration Results
 
 The final integrated dataset successfully combines:
 
-- **Fertility rates** from SingStat (1990-2022)
-- **Female labour force participation** from data.gov.sg
-- **Demographic breakdowns** by age group and marital status in time series
+-   **Fertility rates** from SingStat (1990-2022)
+-   **Female labour force participation** from data.gov.sg
+-   **Demographic breakdowns** by age group and marital status in time series
 
 This integrated dataset forms the foundation for our comprehensive analysis of Singapore's fertility crisis and its relationship with socioeconomic factors. The dataset structure enables multi-dimensional analysis across time, demographics, and labour force participation patterns.
 
@@ -728,7 +729,7 @@ This integrated dataset forms the foundation for our comprehensive analysis of S
   gt_preview()
 ```
 
----
+------------------------------------------------------------------------
 
 # Statistical Analysis
 
@@ -791,6 +792,7 @@ cat("• Fertility Rate vs Outside Labour Force:",
     cor_matrix["fertility_rate", "outside_labour_force"], "\n")
 
 ```
+
 There is a strong negative correlation between fertility rate and female labour participation and overall female labour force size. However, there is only a moderate correlation between fertility rate and overall female population outside of labour force.
 
 **Trend Analysis**
@@ -827,7 +829,7 @@ cat("• Steepest decline occurred in:", summary_stats$steepest_decline_year, "\
 cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3), "\n")
 ```
 
----
+------------------------------------------------------------------------
 
 # Enhanced Data Visualisation
 
@@ -918,6 +920,7 @@ ggplot() +
 ```
 
 ## Interactive Dashboard
+
 this code allows for clicking of the legend trace and labels to filter the data. but it has the ("label",1) naming issue. i gave up on this, theres no way to use ggplot2 and ggplotly to fix the legend. must use plotly or shiny or somehing else. I am trying to create a custom legend below and then slowly integrate the dropdown across all variables later in the next code chunk.
 
 ```{r interactive-agebanded-dashboard, echo=TRUE}
@@ -1161,9 +1164,10 @@ tagList(
 )
 ```
 
-
 ## Interactive Dashboard but with custom legend label
+
 so far so good, need to implement genuine interactivity now.
+
 ```{r}
 
 # 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
@@ -1407,19 +1411,228 @@ tagList(
 )
 ```
 
----
+## Fix needed
+Legend persists through all toggle iterations but to fix to make age_band lines also persist
+
+```{r}
+
+# 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
+agg_counts <- final_dataset |>
+  group_by(year, marital_status, labour_status) |>
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(
+    status = fct_inorder(paste(marital_status, labour_status, sep = " / "))
+  )
+
+# 2. Create SharedData ONLY for the bar data (not the lines)
+shared_bars <- SharedData$new(agg_counts, group = "labour_status_ab")
+
+# 3. Create filter for bars only
+filter_ab <- filter_select(
+  id         = "labour_ab_filter",
+  label      = "Select Labour Status:",
+  sharedData = shared_bars,
+  group      = ~labour_status
+)
+
+# 4. Fertility lines by age_band (excluding the "All" total)
+fertility_ab <- final_dataset |>
+  filter(age_band != "All") |>
+  distinct(year, age_band, fertility_rate)
+
+# 5. Compute scale_factor so that max(fertility_rate) → max(count)
+max_count     <- max(agg_counts$count, na.rm = TRUE)
+max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
+scale_factor  <- max_count / max_fertility
+
+# 6. Build the ggplot with separate data sources
+p_ab <- ggplot() +
+  # Bars - these will be filtered by crosstalk
+  geom_col(
+    data = shared_bars,  # Only the bars use SharedData
+    aes(
+      x           = year,
+      y           = count,
+      fill        = status,
+      group       = status,
+      text        = paste0(
+        "Year: ", year,
+        "<br>Status: ", tools::toTitleCase(gsub("_"," ", status)),
+        "<br>Count: ", comma(count)
+      )
+    ),
+    position = position_dodge(width = 0.8),
+    colour   = "white",
+    size     = 0.2,
+    alpha    = 0.8
+  ) +
+  # Lines - these use regular data and won't be filtered
+  geom_line(
+    data = fertility_ab,  # Regular data frame, not SharedData
+    aes(
+      x      = year,
+      y      = fertility_rate * scale_factor,
+      colour = age_band,
+      group  = age_band,
+      text   = paste0(
+        "Year: ", year,
+        "<br>Age band: ", age_band,
+        "<br>Fertility: ", round(fertility_rate,2)
+      )
+    ),
+    size = 0.8,
+    alpha = 0.8
+  ) +
+  # Points - these use regular data and won't be filtered
+  geom_point(
+    data = fertility_ab,  # Regular data frame, not SharedData
+    aes(
+      x      = year,
+      y      = fertility_rate * scale_factor,
+      colour = age_band,
+      group  = age_band,
+      text   = paste0(
+        "Year: ", year,
+        "<br>Age band: ", age_band,
+        "<br>Fertility: ", round(fertility_rate,2)
+      )
+    ),
+    size = 1
+  ) +
+  scale_y_continuous(
+    name   = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(
+      transform = ~ . / scale_factor,
+      name      = "Fertility Rate (per thousand females)",
+      labels    = label_number(accuracy = 0.1)
+    )
+  ) +
+  scale_fill_manual(
+    name   = "Marital Status / Labour Status",
+    values = c(
+      "married / labour_force"                  = "#00CD00",  # green3
+      "married / outside_labour_force"          = "#006400",  # darkgreen
+      "single / labour_force"                   = "#EE0000",  # red2
+      "single / outside_labour_force"           = "#8B0000",  # darkred
+      "widowed_divorced / labour_force"         = "#0000FF",  # blue1
+      "widowed_divorced / outside_labour_force" = "#00008B"   # blue4
+    )
+  ) +
+  scale_colour_brewer(
+    palette = "Set2",
+    name    = "Age Band"
+  ) +
+  labs(
+    title    = "Age‐Banded Fertility Rates vs Female Labour Counts",
+    subtitle = "Bars by Marital & Labour Status; Lines by Age Band (Always Visible)",
+    x        = "Year",
+    caption  = "Data: SingStat & data.gov.sg"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title       = element_text(face = "bold", size = 12),
+    plot.subtitle    = element_text(size = 12, color = "gray60"),
+    axis.title       = element_text(face = "bold", size = 6),
+    legend.position  = "none",  # Turn off all legends - we'll create custom ones
+    panel.grid.minor = element_blank()
+  )
+
+# 7. Convert to Plotly without any legends
+interactive_ab <- ggplotly(p_ab, tooltip = "text") %>%
+  layout(
+    showlegend = FALSE,  # Ensure no legend shows
+    margin = list(
+      l = 80,
+      r = 80,
+      b = 80,  # Reduced bottom margin since legend will be separate
+      t = 80
+    )
+  )
+
+# 8. Create separate HTML legend (same as before)
+status_colors <- c(
+  "married / labour_force"                  = "#00CD00",
+  "married / outside_labour_force"          = "#006400", 
+  "single / labour_force"                   = "#EE0000",
+  "single / outside_labour_force"           = "#8B0000",
+  "widowed_divorced / labour_force"         = "#0000FF",
+  "widowed_divorced / outside_labour_force" = "#00008B"
+)
+
+status_labels <- c(
+  "Married – In Labour Force",
+  "Married – Outside Labour Force", 
+  "Single – In Labour Force",
+  "Single – Outside Labour Force",
+  "Divorced/Widowed – In Labour Force",
+  "Divorced/Widowed – Outside Labour Force"
+)
+
+age_bands <- c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")
+age_colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
+
+# Create HTML for status legend
+status_legend_html <- paste(
+  '<div style="display: inline-block; margin-right: 20px; margin-bottom: 10px;">',
+  '<div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Marital Status / Labour Status (Filterable)</div>',
+  paste(sapply(1:6, function(i) {
+    paste0(
+      '<div style="display: inline-block; margin-right: 15px; margin-bottom: 3px;">',
+      '<span style="display: inline-block; width: 12px; height: 12px; background-color: ', 
+      status_colors[i], '; margin-right: 5px; vertical-align: middle;"></span>',
+      '<span style="font-size: 11px; vertical-align: middle;">', status_labels[i], '</span>',
+      '</div>'
+    )
+  }), collapse = ""),
+  '</div>'
+)
+
+# Create HTML for age band legend
+age_legend_html <- paste(
+  '<div style="display: inline-block; margin-bottom: 10px;">',
+  '<div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Age Band (Always Visible)</div>',
+  paste(sapply(seq_along(age_bands), function(i) {
+    paste0(
+      '<div style="display: inline-block; margin-right: 12px; margin-bottom: 3px;">',
+      '<span style="display: inline-block; width: 16px; height: 2px; background-color: ', 
+      age_colors[i], '; margin-right: 5px; vertical-align: middle;"></span>',
+      '<span style="font-size: 11px; vertical-align: middle;">', age_bands[i], '</span>',
+      '</div>'
+    )
+  }), collapse = ""),
+  '</div>'
+)
+
+# Combine legends
+combined_legend <- paste0(
+  '<div style="text-align: center; margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">',
+  '<div style="margin-bottom: 15px;">', status_legend_html, '</div>',
+  '<div>', age_legend_html, '</div>',
+  '</div>'
+)
+
+# 9. Render final visualization with separate HTML legend
+tagList(
+  div(style = "margin-bottom:20px;",
+      h3("Interactive Age‐Banded Fertility Dashboard"),
+      p("Use the dropdown to filter bars by labour status. Age band lines remain visible for all filters.")
+  ),
+  filter_ab,
+  interactive_ab,
+  HTML(combined_legend)
+)
+```
+------------------------------------------------------------------------
 
 # Key Findings & Insights
 
 ## Summary Statistics
 
-
 ## Statistical Significance Testing
 
-
----
+------------------------------------------------------------------------
 
 # Team Contributions
 
-
-```
+\`\`\`

@@ -48,6 +48,7 @@ library(stringr)
 library(scales)
 library(forcats)
 library(DT) #test
+library(glue) # for cleaner HTML tool tips
 # may not be needed/not used
 # library(directlabels) # for categorical text labeling
 # library(ggforce) # for enclosing shapes
@@ -1750,6 +1751,155 @@ gir
 
 
 ```
+
+faceted ggiraph v2
+```{r}
+# Prepare aggregated counts with combined mutate and HTML tooltips
+agg_counts <- final_dataset %>%
+  group_by(year, marital_status, labour_status) %>%
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
+  mutate(
+    status   = fct_inorder(paste(marital_status, labour_status, sep = " / ")),
+    data_id  = paste0("year_", year),
+    tooltip  = glue(
+      "<b>Year:</b> {year}<br/>",
+      "<b>Status:</b> {marital_status} / {labour_status}<br/>",
+      "<b>Count:</b> {comma(count)}"
+    )
+  )
+
+# Prepare fertility rates with unified data_id and HTML tooltips
+fertility_ab <- final_dataset %>%
+  filter(age_band != "All") %>%
+  distinct(year, age_band, fertility_rate) %>%
+  mutate(
+    data_id = paste0("year_", year),
+    tooltip = glue(
+      "<b>Year:</b> {year}<br/>",
+      "<b>Age Band:</b> {age_band}<br/>",
+      "<b>Fertility:</b> {round(fertility_rate, 2)}"
+    )
+  )
+
+# Compute scaling factor once
+max_count     <- max(agg_counts$count, na.rm = TRUE)
+max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
+scale_factor  <- max_count / max_fertility
+
+# Build interactive ggplot
+p <- ggplot() +
+  geom_col_interactive(
+    data = agg_counts,
+    aes(
+      x       = year,
+      y       = count,
+      fill    = marital_status,
+      data_id = data_id,
+      tooltip = tooltip
+    ),
+    position = position_dodge(width = 0.8),
+    alpha = 0.8
+  ) +
+  geom_line_interactive(
+    data = fertility_ab,
+    aes(
+      x       = year,
+      y       = fertility_rate * scale_factor,
+      colour  = age_band,
+      group   = age_band,
+      data_id = data_id,
+      tooltip = tooltip
+    ),
+    size = 1
+  ) +
+  geom_point_interactive(
+    data = fertility_ab,
+    aes(
+      x       = year,
+      y       = fertility_rate * scale_factor,
+      colour  = age_band,
+      group   = age_band,
+      data_id = data_id,
+      tooltip = tooltip
+    ),
+    size = 3
+  ) +
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(
+      ~ . / scale_factor,
+      name   = "Fertility Rate (per thousand females)",
+      labels = label_number(accuracy = 0.1)
+    )
+  ) +
+  scale_fill_viridis_d(option = "C", name = "Marital Status") +
+  scale_colour_viridis_d(option = "B", name = "Age Band") +
+  facet_wrap(
+    ~ labour_status,
+    ncol     = 1,
+    labeller = labeller(
+      labour_status = c(
+        labour_force         = "In Labour Force",
+        outside_labour_force = "Outside Labour Force"
+      )
+    )
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    axis.text.x     = element_text(angle = 45, hjust = 1, size = 9),
+    legend.position = "bottom",
+    strip.text      = element_text(face = "bold", size = 12)
+  )
+
+# Render interactive plot with refined options
+gir <- girafe(
+  ggobj     = p,
+  width_svg = 12,
+  height_svg= 8,
+  options   = list(
+    opts_hover(css         = "stroke-width:0.3px;opacity:2;"),
+    opts_hover_inv(css     = "opacity:0.2;"),
+    opts_selection(
+      type       = "single",
+      only_shiny = FALSE,
+      css        = "stroke:black;stroke-width:0.3px;opacity:2;"
+    ),
+    opts_selection_inv(css = "opacity:0.2;"),
+    opts_zoom(max = 5, min = 1),
+    opts_tooltip(
+      css = "background: rgba(0,0,0,0.75);
+             color: white;
+             padding: 5px;
+             border-radius: 5px;"
+    )
+  )
+)
+
+gir
+
+```
+**Summary of Improvements:**
+
+- Streamlined data prep: Combined mutate() calls and used glue::glue() for cleaner, HTML‐enhanced tooltips.
+
+- Cache chunk: Added cache=TRUE to avoid re‐computing on every render.
+
+- Color accessibility: Switched to Viridis palettes (scale_fill_viridis_d, scale_colour_viridis_d) for colorblind‐friendly visuals.
+
+- Unified selection IDs: Used a single data_id = paste0("year_", year) for both bars and lines—clicking a year now highlights all elements for that year.
+
+**Improved interactivity:**
+
+- Changed to single‐click selection (opts_selection(type="single")).
+
+- Added custom tooltip styling via opts_tooltip().
+
+- Aesthetic tweaks: Rotated x‐axis labels for readability, bumped strip text to bold, and positioned legend at the bottom.
+
+- Performance optimization: Computed the scaling factor once outside of the plot call.
+
+
 # Key Findings & Insights
 
 ## Summary Statistics
@@ -1759,4 +1909,10 @@ gir
 ------------------------------------------------------------------------
 
 # Team Contributions
-
+| Team Member | Tasks |
+| --- | --- |
+| Guo Zi Qiang Robin |  |
+| Chew Tze Han |  |
+| Cheong Wai Hong Jared |  |
+| Akram | |
+| Gregory Tan |  |

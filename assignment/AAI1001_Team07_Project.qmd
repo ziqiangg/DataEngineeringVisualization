@@ -47,7 +47,7 @@ library(gt)
 library(stringr)
 library(scales)
 library(forcats)
-
+library(DT) #test
 # may not be needed/not used
 # library(directlabels) # for categorical text labeling
 # library(ggforce) # for enclosing shapes
@@ -724,9 +724,21 @@ This integrated dataset forms the foundation for our comprehensive analysis of S
 #| tbl-cap: "Preview of `final_dataset`"
 
 
-  gt(final_dataset) |>
-  tab_header(title = md("**Sample of Final Integrated Dataset**")) |>
-  gt_preview()
+datatable(
+  final_dataset,
+  class    = "compact stripe hover",   # make rows & font more compact
+  extensions = 'Buttons',
+  filter     = "none",   # turn off per-column filters
+  options = list(
+    pageLength = 6,
+    scrollX    = TRUE,
+    dom        = 'Bfrtip',                # Buttons, global filter, table, info, pagination
+    buttons    = list(
+      list(extend = 'csv', text = 'Export CSV')
+    )
+  ),
+  rownames = FALSE
+)
 ```
 
 ------------------------------------------------------------------------
@@ -1625,6 +1637,119 @@ tagList(
 ```
 ------------------------------------------------------------------------
 
+faceted ggiraph
+```{r visualization-facet, echo=TRUE, fig.width=12, fig.height=8}
+# Interactive plot
+# Prepare interactive data IDs for persistent selection
+agg_counts <- final_dataset |>
+  group_by(year, marital_status, labour_status) |>
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(
+    status = fct_inorder(paste(marital_status, labour_status, sep = " / "))
+  )
+
+agg_counts <- agg_counts |> 
+  mutate(data_id = paste0("bar_", marital_status, "_", year),
+         tooltip = paste0("Year: ", year,
+                          "\nStatus: ", marital_status,
+                          "\nCount: ", count))
+
+fertility_ab <- final_dataset |>
+  filter(age_band != "All") |>
+  distinct(year, age_band, fertility_rate)
+
+fertility_ab <- fertility_ab |> 
+  mutate(data_id = paste0("line_", age_band),
+         tooltip = paste0("Year: ", year,
+                          "\nAge Band: ", age_band,
+                          "\nFertility: ", round(fertility_rate, 2)))
+
+max_count     <- max(agg_counts$count, na.rm = TRUE)
+max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
+scale_factor  <- max_count / max_fertility
+
+
+
+# Build ggplot with interactive geoms
+p <- ggplot() +
+  geom_col_interactive(
+    data = agg_counts,
+    aes(
+      x       = year,
+      y       = count,
+      fill    = marital_status,
+      data_id = data_id,
+      tooltip = tooltip
+    ),
+    position = position_dodge(width = 0.8),
+    alpha = 0.8
+  ) +
+  geom_line_interactive(
+    data = fertility_ab,
+    aes(
+      x       = year,
+      y       = fertility_rate * scale_factor,
+      colour  = age_band,
+      group   = age_band,
+      data_id = data_id,
+      tooltip = tooltip
+    ),
+    size = 1
+  ) +
+  geom_point_interactive(
+    data = fertility_ab,
+    aes(
+      x       = year,
+      y       = fertility_rate * scale_factor,
+      colour  = age_band,
+      group   = age_band,
+      data_id = data_id,
+      tooltip = tooltip
+    ),
+    size = 3
+  ) +
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = scales::comma,
+    sec.axis = sec_axis(~ . / scale_factor,
+                        name = "Fertility Rate (per thousand females)",
+                        labels = scales::label_number(accuracy = 0.1))
+  ) +
+  scale_fill_brewer(palette = "Set1", name = "Marital Status") +
+  scale_colour_brewer(palette = "Set2", name = "Age Band") +
+  facet_wrap(~ labour_status, ncol = 1,
+             labeller = labeller(
+               labour_status = c(
+                 labour_force = "In Labour Force",
+                 outside_labour_force = "Outside Labour Force"
+               )
+             )) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.position = "bottom",
+    strip.text      = element_text(face = "bold", size = 12)
+  )
+
+# Create interactive widget with zoom support enabled
+gir <- girafe(
+  ggobj = p,
+  width_svg = 12,
+  height_svg = 8,
+  options = list(
+    opts_hover(css = "stroke-width:0.3px;opacity:2;"),
+    opts_hover_inv(css = "opacity:0.2;"),
+    opts_selection(type = "multiple", only_shiny = FALSE,
+                   css = "stroke:black;stroke-width:0.3px;opacity:2;"),
+    opts_selection_inv(css = "opacity:0.2;"),
+    opts_zoom(max = 5, min = 1)  # ← Added zoom control (1 = no zoom, up to 5x)
+  )
+)
+
+# Print the interactive plot
+gir
+
+
+```
 # Key Findings & Insights
 
 ## Summary Statistics
@@ -1635,4 +1760,3 @@ tagList(
 
 # Team Contributions
 
-\`\`\`

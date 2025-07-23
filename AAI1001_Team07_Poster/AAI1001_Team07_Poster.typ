@@ -436,7 +436,7 @@
 
 = Introduction
 <introduction>
-Singapore faces a #strong[demographic crisis] with one of the world's lowest fertility rates, dropping below 1.0 for the first time in 2023. This threatens the nation's demographic sustainability and economic future. Our project analyses #strong[three decades of fertility and labour force data] to identify patterns and relationships that existing visualisations neglect.
+Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses #strong[three decades of fertility and labour force data] to identify patterns and relationships that visualisations from the source neglects. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from different websites.
 
 #block[
 #callout(
@@ -481,66 +481,131 @@ supplement: "Figure",
 
 = Original Visualisation Analysis
 <original-visualisation-analysis>
-#figure([
-#table(
-  columns: (26.27%, 29.66%, 44.07%),
-  align: (auto,auto,auto,),
-  table.header([Strengths], [Weaknesses], [Our Improvements],),
-  table.hline(),
-  [Uses official SingStat data], [Limited to 2019--2023 only], [Extended analysis: 1990--2020 (32 years)],
-  [Clear recent trend], [Missing socioeconomic factors], [Integrated labour force & marital status data],
-  [Professional format], [Static visualization], [Fully interactive dashboard],
-  [Accessible to public], [No age-specific breakdown], [Age-specific fertility rates by group],
-)
-], caption: figure.caption(
-position: top, 
-[
-Fertility Analysis Comparison Table
-]), 
-kind: "quarto-float-tbl", 
-supplement: "Table", 
-)
-<tbl-1>
++ #strong[No data validation];: There is no data validation provided in the graph.
 
++ #strong[Limited range];: The graph only displays data from 2019-2023. This is not a wide enough of a range to make conclusive statements.
+
++ #strong[Missing socioeconomic factors];: There are no socioeconomic factors listed to support the decline in the fertility rate. They are crucial information that can reinforce the nature of the graph.
+
++ #strong[Static visualisation];: The original visualisation lacks depth and interactive features that would otherwise allow the user to better understand the graphs. The static natures does not allow the user to hover or click on data points to gain more information.
 
 = Suggested Improvements
 <suggested-improvements>
-#figure([
-#table(
-  columns: 3,
-  align: (auto,auto,auto,),
-  table.header([Lorem ipsum dolor sit.], [Lorem ipsum.], [Lorem ipsum.],),
-  table.hline(),
-  [Lorem ipsum dolor.], [Lorem ipsum.], [$alpha$],
-  [Lorem ipsum.], [Lorem ipsum.], [$beta$],
-  [Lorem.], [Lorem.], [$gamma$],
-  [Lorem ipsum dolor.], [Lorem.], [$theta$],
-)
-], caption: figure.caption(
-position: top, 
-[
-Lorem ipsum dolor sit amet
-]), 
-kind: "quarto-float-tbl", 
-supplement: "Table", 
-)
-<tbl-2>
++ #strong[Inlcude data validation];: Add comprehensive data validation along with outlier analysis. This aims to ensure the accuracy and reliability of the data presented.
 
++ #strong[Extended analysis];: Increase the range of the data to 1990-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
+
++ #strong[Integrate socioeconomic factors];: Integrate socioeconomic factors such as labour force participation and marital status. This will provide a more holistic view of the factors influencing fertility rates. This allows for better policy formulation and understanding of the demographic trends.
+
++ #strong[Dynamic visualisation];: Ensure that the visualisation consists of a fully interactive dashboard. This will allow users to interact with the data, such as hovering over data points to see more information. They can also filter by different socioeconomic factors and viewing age-specific fertility rates. This enhances user engagement and understanding of the data.
 
 = Implementation
 <implementation>
-Lorem #ref(<tbl-1>, supplement: [Table]) ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim aeque doleamus animo, cum corpore dolemus, fieri tamen permagna accessio potest, si aliquod aeternum et infinitum impendere malum nobis opinemur. Quod idem licet transferre in voluptatem, ut postea variari voluptas distinguique possit, augeri amplificarique non possit. At etiam Athenis, ut e patre audiebam facete et urbane Stoicos irridente, statua est in quo a nobis philosophia defensa et.
+#block[
+#set enum(numbering: "i.", start: 1)
++ Data Sources
+]
+
+#table(
+  columns: (19.85%, 9.56%, 13.24%, 38.97%, 18.38%),
+  align: (auto,auto,auto,auto,auto,),
+  table.header([Dataset], [Source], [Time Period], [Variables], [Records],),
+  table.hline(),
+  [Fertility Rates], [SingStat], [1960-2024], [Age-specific fertility rates, Total fertility rate], [17 variables wide format],
+  [Labour Force (Working)], [data.gov.sg], [1991-2022], [Female labour force by age & marital status], [5 columns long format],
+  [Labour Force (Not working)], [data.gov.sg], [1991-2022], [Females outside labour force by age & marital status], [5 columns long format],
+)
+#block[
+#set enum(numbering: "i.", start: 2)
++ Software
+]
+
+- `crosstalk` -- Enables interactivity between HTML widgets
+- `tidyverse` -- Loads core tidy data science packages like `ggplot2`, `dplyr` and `tidyr`
+- `viridis` -- Provides colourblind-friendly color palettes for plots
+- `ggpp` -- Adds plot annotations like equations and labels in `ggplot2`
+- `ggrepel` -- Prevents overlapping text labels in `ggplot2` plots
+- `RColorBrewer` -- Offers pre-made color palettes for maps and plots
+- `htmltools` -- Tools for creating and customizing HTML content in R
+- `dplyr` -- Grammar of data manipulation
+- `knitr` -- For dynamic report generation
+- `tools` -- Base R utilities for package and file management
+- `ggiraph` -- Adds tooltips and interactivity to `ggplot2` plots
+- `ggplot2` -- Core package for creating elegant plots
+- `plotly` -- Converts static plots to interactive plots
+- `janitor` -- Cleans messy data
+- `gt` -- Creates beautiful tables for reporting
+- `stringr` -- Simplifies string operations
+- `scales` -- Formatting scales and labels in visualisations
+- `forcats` -- Handles categorical variables more easily
+- `DT` -- R interface to interactive DataTables (tables with filters/sorting).
+- `glue` -- Embeds R expressions in strings using `{}`
+
+#block[
+#set enum(numbering: "i.", start: 2)
++ Workflow
+]
+
+#block[
+#set enum(numbering: "1)", start: 1)
++ Exploratory Data Analysis:
+
++ Feature Engineering:
+]
+
+== Data Cleaning and Reshaping Workflow
+<data-cleaning-and-reshaping-workflow>
+- Handle all missing values by converting `"na"` and `"-"` strings to `NA`.
+
+- Standardise age bands by renaming columns to consistent labels like `"15-19"` and align across datasets.
+
+- Filter data by keeping only years from #strong[1990 to 2022] to match across fertility and labour datasets.
+
+- Pivot fertility data from wide to long format for year-wise plotting.
+
+- Rename `age` to `age_band`, clean column names using consistent formatting.
+
+- Introduce `uom` (unit of measurement) column to specify rate scaling.
+
+- Divide labour force counts by 1,000 to match y-axis scale.
+
+- Keep age-specific fertility rates and Total Fertility Rate (TFR).
+
+- Add `"All"` age group to show total counts by year and marital status for plots and filters.
+
+- Use the same cleaning logic for `fertility`, `not_working`, and `work` tibbles for consistency.
+
+- Check for missing data and outliers.
+
+- Join the datasets to create a single tibble with all the necessary information for analysis.
+
+#block[
+#set enum(numbering: "1)", start: 3)
++ Data Visualisation:
+]
+
+- Define Colors: Create a color palette representing the socioeconomic factors influencing fertility rates such as labour force participation and marital status.
+- Graph Properties: Configure interactivity by allowing user to click and zoom on the data points.
+- Layout: Set the title and overall layout properties for an informative and visually appealinggraph.
 
 = Improved Visualisation
 <improved-visualisation>
-#block(
-fill:luma(230),
-inset:8pt,
-radius:4pt,
+#figure([
+#box(image("images/total_fertility_rate.png"))
+], caption: figure.caption(
+position: bottom, 
 [
+Total fertility rate from 2019 to 2023
+]), 
+kind: "quarto-float-fig", 
+supplement: "Figure", 
+)
+<fig-1>
+
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim
 
-])
+:::
 
 = Insight
 <insight>

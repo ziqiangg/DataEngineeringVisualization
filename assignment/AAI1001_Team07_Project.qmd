@@ -806,7 +806,11 @@ cat("• Fertility Rate vs Outside Labour Force:",
 
 ```
 
-There is a strong negative correlation between fertility rate and female labour participation and overall female labour force size. However, there is only a moderate correlation between fertility rate and overall female population outside of labour force.
+- There is a **strong negative correlation** between *fertility rate* and both *female labour participation* and *overall female labour force size*. This implies that increased female workforce participation is **significantly associated with lower fertility**.
+
+- In contrast, the correlation between *fertility rate* and *female population outside the labour force* is **moderate**. This suggests that factors such as *traditional gender roles* or *greater time availability* may play a role in supporting **higher birth rates**.
+
+
 
 **Trend Analysis**
 
@@ -841,8 +845,10 @@ cat("• Total fertility decline (1990-2020):", round(summary_stats$total_declin
 cat("• Steepest decline occurred in:", summary_stats$steepest_decline_year, "\n")
 cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3), "\n")
 ```
+- The year **1998** emerges as a **key inflection point**, likely influenced by the *Asian Financial Crisis*. The crisis introduced economic uncertainty, which may have **delayed family planning decisions**.
 
-------------------------------------------------------------------------
+- Overall, the data show a **consistent downward trend in fertility**, reflecting **structural changes** in: *Social norms*, *Career aspirations* & *Marriage and childbirth timing*
+
 
 # Enhanced Data Visualisation
 
@@ -932,9 +938,13 @@ ggplot() +
   )
 ```
 
+The above graph shows the relationship between Total Fertility Rate(per female), Female population(thousands) and Marital/Labour Status.
+
 ## Interactive Dashboard
 
-this code allows for clicking of the legend trace and labels to filter the data. but it has the ("label",1) naming issue. i gave up on this, theres no way to use ggplot2 and ggplotly to fix the legend. must use plotly or shiny or somehing else. I am trying to create a custom legend below and then slowly integrate the dropdown across all variables later in the next code chunk.
+To introduce interactivity, we will create an interactive dashboard using `plotly` to allow users to filter by marital status, labour status, and age band.
+
+~~this code allows for clicking of the legend trace and labels to filter the data. but it has the ("label",1) naming issue. i gave up on this, theres no way to use ggplot2 and ggplotly to fix the legend. must use plotly or shiny or somehing else. I am trying to create a custom legend below and then slowly integrate the dropdown across all variables later in the next code chunk.~~
 
 ```{r interactive-agebanded-dashboard, echo=TRUE}
 # 1. Aggregate labour counts across ALL age bands for each marital_status × labour_status
@@ -1177,9 +1187,14 @@ tagList(
 )
 ```
 
+The first iteration of the interactive dashboard correctly uses plotly to highlight certain parts of the graph, however, fails to correctly filter the data based on the selected dropdown categories. Additionally, the legend is not properly labelled, with a (,1) appearing at the end of legend labels.
+
+
 ## Interactive Dashboard but with custom legend label
 
-so far so good, need to implement genuine interactivity now.
+The second iteration successfully implements a custom legend that correctly labels the legend items, but still does not filter the data based on the selected dropdown categories. Additionally, the legend completely disappears when changing filtering that is not the base graph.
+
+~~so far so good, need to implement genuine interactivity now.~~
 
 ```{r}
 
@@ -1425,7 +1440,10 @@ tagList(
 ```
 
 ## Fix needed
-Legend persists through all toggle iterations but to fix to make age_band lines also persist
+
+After attempting different methods, we decided that using html to manually create the legends was the last and most plausible option. As the legends are not externally created, they persist through filtering. However, certain parts that should be kept such as age_band lines do not persist through filtering.
+
+~~Legend persists through all toggle iterations but to fix to make age_band lines also persist~~
 
 ```{r}
 
@@ -1639,7 +1657,10 @@ tagList(
 
 
 ## v2 graph
-Made the age_band lines to persist when filtering
+
+Finally, the last iteration of the graph is able to produce a fully interactive dashboard with the ability to filter by labour status. Features such as zooming in and selecting specific visualisations are implemented through plotly.
+
+~~Made the age_band lines to persist when filtering~~
 ```{r}
 # 1.1. Aggregate for bars
 agg_counts <- final_dataset |>

@@ -851,7 +851,8 @@ cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3
 
 - Overall, the data show a **consistent downward trend in fertility**, reflecting **structural changes** in: *Social norms*, *Career aspirations* & *Marriage and childbirth timing*
 
-
+# visualisation
+this is bad attempt at all dimension filtering
 ```{r}
 
 # Load and clean data
@@ -1150,171 +1151,185 @@ gir
 this is the ggplot and plotly which can filter by all dimensions but is unable to do ages correctly only 15-19 is appearing and we do not know why the other ages are not hiding / showing properly. (robin in the future i think it is becuz the summarising is done only for 15-19)
 
 ```{r}
-
-# Load and clean data
-final_dataset <- read.csv("Singapore’s Fertility Crisis A Data-Driven Analysis of Socioeconomic Factors.csv")
-
-# SharedData: use one source for everything
+#–– 1. Wrap the entire final_dataset in one SharedData object
 shared_data <- SharedData$new(final_dataset, group = "common_group")
 
-# Clean and prep dataset
-final_data <- shared_data$data() %>%
+#–– 2. Pull it back out and clean
+full <- shared_data$data() %>%
   mutate(
     marital_status = tools::toTitleCase(trimws(as.character(marital_status))),
     labour_status  = tools::toTitleCase(trimws(as.character(labour_status))),
     age_band       = tools::toTitleCase(trimws(as.character(age_band))),
-    count          = as.numeric(as.character(count)),
-    fertility_rate = as.numeric(as.character(fertility_rate))
+    count          = as.numeric(count),
+    fertility_rate = as.numeric(fertility_rate)
   )
 
-# Split into two datasets
-fertility_data <- final_data %>%
-  filter(age_band != "All")
-
-bar_data <- final_data %>%
+#–– 3. Split for plotting
+fertility_data <- full %>% filter(age_band != "All")
+bar_data       <- full %>%
   filter(age_band == "All") %>%
   group_by(year, marital_status, labour_status) %>%
   summarise(total_count = sum(count, na.rm = TRUE), .groups = "drop")
 
-# Wrap into SharedData objects (same group = filters apply to both)
+#–– 4. Make SharedData for both plots
 shared_fertility <- SharedData$new(fertility_data, group = "common_group")
-shared_bar <- SharedData$new(bar_data, group = "common_group")
+shared_bar       <- SharedData$new(bar_data,       group = "common_group")
 
-# Filter controls
-filter_marital <- filter_select("filter_marital", "Marital Status:", shared_fertility, ~marital_status)
-filter_labour  <- filter_select("filter_labour", "Labour Status:", shared_fertility, ~labour_status)
-filter_ageband <- filter_select("filter_ageband", "Age Band:", shared_fertility, ~age_band)
+#–– 5. Build filters
+#   Marital & Labour filter both plots
+filter_marital <- filter_checkbox(
+  id         = "filter_marital",
+  label      = "Marital Status:",
+  sharedData = shared_data,
+  group      = ~marital_status,
+  inline     = TRUE,
+  allLevels  = TRUE
+)
+filter_labour <- filter_checkbox(
+  id         = "filter_labour",
+  label      = "Labour Status:",
+  sharedData = shared_data,
+  group      = ~labour_status,
+  inline     = TRUE,
+  allLevels  = TRUE
+)
+#   Age‐band filter ONLY fertility layer
+filter_ageband <- filter_checkbox(
+  id         = "filter_ageband",
+  label      = "Age Band:",
+  sharedData = shared_fertility,
+  group      = ~age_band,
+  inline     = FALSE,
+  allLevels  = TRUE
+)
 
-# Colors
-marital_colors <- setNames(brewer.pal(length(unique(bar_data$marital_status)), "Set2"),
-                           unique(bar_data$marital_status))
-age_colors <- setNames(brewer.pal(length(unique(fertility_data$age_band)), "Dark2"),
-                       unique(fertility_data$age_band))
+#–– 6. Colors & scaling
+marital_colors <- setNames(
+  brewer.pal(length(unique(bar_data$marital_status)), "Set2"),
+  unique(bar_data$marital_status)
+)
+age_colors <- setNames(
+  brewer.pal(length(unique(fertility_data$age_band)), "Dark2"),
+  unique(fertility_data$age_band)
+)
+scale_factor <- max(bar_data$total_count, na.rm = TRUE) /
+                max(fertility_data$fertility_rate, na.rm = TRUE)
 
-# Scaling factor for dual axis
-scale_factor <- max(bar_data$total_count, na.rm = TRUE) / max(fertility_data$fertility_rate, na.rm = TRUE)
-
-# Combined plot
+#–– 7. Combined ggplot
 p <- ggplot() +
-  # Bar plot (stacked by marital status, dodged by labour status)
   geom_col(
-    data = shared_bar,
+    data     = shared_bar,
     aes(
-      x = as.factor(year),
-      y = total_count,
-      fill = marital_status,
+      x     = factor(year),
+      y     = total_count,
+      fill  = marital_status,
       group = labour_status,
-      text = paste0(
+      text  = paste0(
         "Year: ", year,
-        "<br>Labour Status: ", labour_status,
-        "<br>Marital Status: ", marital_status,
+        "<br>Labour: ", labour_status,
+        "<br>Marital: ", marital_status,
         "<br>Count: ", comma(total_count)
       )
     ),
     position = position_dodge(width = 0.6),
-    width = 0.5,
-    colour = "white",
-    size = 0.2,
-    alpha = 0.85
+    width    = 0.5,
+    colour   = "white",
+    size     = 0.2,
+    alpha    = 0.85
   ) +
-
-  # Fertility rate line and points
   geom_line(
     data = shared_fertility,
     aes(
-      x = as.factor(year),
-      y = fertility_rate * scale_factor,
-      group = age_band,
+      x      = factor(year),
+      y      = fertility_rate * scale_factor,
       colour = age_band,
-      text = paste0(
+      group  = age_band,
+      text   = paste0(
         "Year: ", year,
         "<br>Age Band: ", age_band,
         "<br>Fertility Rate: ", round(fertility_rate, 2)
       )
     ),
-    size = 1.2,
+    size  = 1.2,
     alpha = 0.9
   ) +
   geom_point(
     data = shared_fertility,
     aes(
-      x = as.factor(year),
-      y = fertility_rate * scale_factor,
+      x      = factor(year),
+      y      = fertility_rate * scale_factor,
       colour = age_band
     ),
-    size = 2,
+    size  = 2,
     alpha = 0.9
   ) +
-
   scale_fill_manual(values = marital_colors) +
   scale_colour_manual(values = age_colors) +
-
   scale_y_continuous(
-    name = "Female Population (thousands)",
-    labels = comma,
-    sec.axis = sec_axis(~ . / scale_factor,
-                        name = "Fertility Rate (per thousand females)",
-                        labels = label_number(accuracy = 0.1))
+    name     = "Female Population (thousands)",
+    labels   = comma,
+    sec.axis = sec_axis(
+      ~ . / scale_factor,
+      name   = "Fertility Rate (per female)",
+      labels = label_number(accuracy = 0.1)
+    )
   ) +
   labs(
-    title = "Fertility Rates vs Labour Participation",
+    title    = "Fertility Rates vs Labour Participation",
     subtitle = "Bars: Population by Marital & Labour Status; Lines: Fertility by Age Band",
-    x = "Year",
-    caption = "Source: SingStat & data.gov.sg"
+    x        = "Year",
+    caption  = "Source: SingStat & data.gov.sg"
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(face = "bold"),
-    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title      = element_text(face = "bold"),
+    axis.text.x     = element_text(angle = 45, hjust = 1),
     legend.position = "none"
   )
 
-# Convert to interactive plotly plot
+#–– 8. Convert to Plotly
 plotly_output <- ggplotly(p, tooltip = "text")
 
-
-
-# Legend HTML
-marital_legend <- paste(
+#–– 9. Legends
+marital_legend <- HTML(paste0(
   '<div style="font-weight:bold;margin-bottom:8px;">Marital Status</div>',
-  paste(sapply(names(marital_colors), function(label) {
-    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
-            marital_colors[[label]], label)
+  paste0(lapply(names(marital_colors), function(lbl) {
+    sprintf(
+      '<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span>%s</div>',
+      marital_colors[[lbl]], lbl
+    )
   }), collapse = "")
-)
-
-age_legend <- paste(
+))
+age_legend <- HTML(paste0(
   '<div style="font-weight:bold;margin-top:15px;margin-bottom:8px;">Age Bands</div>',
-  paste(sapply(names(age_colors), function(label) {
-    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
-            age_colors[[label]], label)
+  paste0(lapply(names(age_colors), function(lbl) {
+    sprintf(
+      '<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span>%s</div>',
+      age_colors[[lbl]], lbl
+    )
   }), collapse = "")
+))
+combined_legend <- div(
+  style = "margin-top:20px;padding:10px;background:#f9f9f9;border:1px solid #ccc;border-radius:5px;",
+  marital_legend, age_legend
 )
 
-combined_legend <- paste0(
-  '<div style="margin-top:20px;padding:10px;background:#f9f9f9;border:1px solid #ccc;border-radius:5px;">',
-  marital_legend, age_legend,
-  '</div>'
-)
-
-# Final UI layout
+#–– 10. Render
 tagList(
-  div(style = "margin-bottom:20px;",
-      h3("Interactive Fertility & Labour Dashboard"),
-      p("Use filters to explore female labour force counts and age-banded fertility rates.")
+  div(
+    style = "margin-bottom:20px;",
+    h3("Interactive Fertility & Labour Dashboard"),
+    p("Use the checkboxes below to filter population counts and fertility rates.")
   ),
-  div(style = "display: flex; gap: 15px; margin-bottom: 20px;",
-      filter_marital,
-      filter_labour,
-      filter_ageband
+  div(
+    style = "display:flex; flex-wrap:wrap; gap:15px; margin-bottom:20px;",
+    filter_marital, filter_labour, filter_ageband
   ),
   plotly_output,
-  HTML(combined_legend)
+  combined_legend
 )
 ```
-```{r}
 
-```
 **Summary of Improvements:**
 
 

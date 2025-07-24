@@ -1654,7 +1654,224 @@ tagList(
   HTML(combined_legend)
 )
 ```
+```{r}
 
+library(dplyr)
+library(forcats)
+library(crosstalk)
+library(highcharter)
+library(scales)
+library(htmltools)
+
+# 1. Aggregate counts
+agg_counts <- final_dataset |>
+  group_by(year, marital_status, labour_status) |>
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(status = fct_inorder(paste(marital_status, labour_status, sep = " / ")))
+
+# 2. SharedData for bar chart only
+shared_bars <- SharedData$new(agg_counts, group = "labour_status_ab")
+
+# 3. Fertility lines (no "All")
+fertility_ab <- final_dataset |>
+  filter(age_band != "All") |>
+  distinct(year, age_band, fertility_rate)
+
+# 4. Scaling factor for dual y-axis
+max_count     <- max(agg_counts$count, na.rm = TRUE)
+max_fertility <- max(fertility_ab$fertility_rate, na.rm = TRUE)
+scale_factor  <- max_count / max_fertility
+
+# 5. Bar colors
+status_colors <- c(
+  "married / labour_force"                  = "#00CD00",
+  "married / outside_labour_force"          = "#006400", 
+  "single / labour_force"                   = "#EE0000",
+  "single / outside_labour_force"           = "#8B0000",
+  "widowed_divorced / labour_force"         = "#0000FF",
+  "widowed_divorced / outside_labour_force" = "#00008B"
+)
+
+# 6. Fertility line colors
+age_bands <- c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")
+age_colors <- RColorBrewer::brewer.pal(length(age_bands), "Set2")
+names(age_colors) <- age_bands
+
+# 7. Create base chart
+chart <- highchart() |>
+  hc_chart(type = "column") |>
+  hc_title(text = "Age‐Banded Fertility Rates vs Female Labour Counts") |>
+  hc_subtitle(text = "Bars by Marital & Labour Status; Lines by Age Band (Always Visible)") |>
+  hc_xAxis(type = "category", title = list(text = "Year")) |>
+  hc_yAxis_multiples(
+    list(title = list(text = "Female Population (thousands)")),
+    list(title = list(text = "Fertility Rate (per thousand females)"), opposite = TRUE)
+  )
+
+# 8. Add fertility lines (always visible)
+for (band in age_bands) {
+  df_band <- fertility_ab |>
+    filter(age_band == band) |>
+    mutate(scaled_rate = fertility_rate * scale_factor)
+  
+  chart <- chart |>
+    hc_add_series(
+      data = df_band,
+      type = "line",
+      name = band,
+      hcaes(x = year, y = scaled_rate),
+      color = age_colors[band],
+      yAxis = 0,
+      tooltip = list(pointFormat = paste0(
+        "<b>Age Band:</b> ", band,
+        "<br><b>Fertility:</b> {point.fertility_rate:.2f}"
+      )),
+      dataLabels = list(enabled = FALSE),
+      marker = list(enabled = TRUE),
+    )
+}
+
+# 9. Add bars (filterable)
+for (status in names(status_colors)) {
+  df_status <- agg_counts |>
+    filter(status == !!status)
+  
+  # Identify group
+  group <- if (grepl("outside_labour_force", status)) {
+    "outside"
+  } else {
+    "labour"
+  }
+
+  chart <- chart |>
+    hc_add_series(
+      data  = df_status,
+      type  = "column",
+      name  = tools::toTitleCase(gsub("_", " ", status)),
+      hcaes(x = year, y = count),
+      color = status_colors[status],
+      yAxis = 0,
+      visible = FALSE,  # Hide by default
+      id     = status,
+      custom = list(group = group)
+    )
+}
+
+
+# 10. Wrap in highchartOutput using htmltools
+hc_widget <- highchartOutput("hc_ab", height = "600px")
+
+# 11. Crosstalk filter for bars
+filter_ab <- filter_select(
+  id         = "labour_ab_filter",
+  label      = "Select Labour Status:",
+  sharedData = shared_bars,
+  group      = ~labour_status
+)
+
+# 12. Create HTML legends
+status_labels <- c(
+  "Married – In Labour Force",
+  "Married – Outside Labour Force", 
+  "Single – In Labour Force",
+  "Single – Outside Labour Force",
+  "Divorced/Widowed – In Labour Force",
+  "Divorced/Widowed – Outside Labour Force"
+)
+
+status_legend_html <- paste(
+  '<div style="display: inline-block; margin-right: 20px; margin-bottom: 10px;">',
+  '<div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Marital Status / Labour Status (Filterable)</div>',
+  paste(sapply(1:6, function(i) {
+    paste0(
+      '<div style="display: inline-block; margin-right: 15px; margin-bottom: 3px;">',
+      '<span style="display: inline-block; width: 12px; height: 12px; background-color: ', 
+      status_colors[i], '; margin-right: 5px; vertical-align: middle;"></span>',
+      '<span style="font-size: 11px; vertical-align: middle;">', status_labels[i], '</span>',
+      '</div>'
+    )
+  }), collapse = ""),
+  '</div>'
+)
+
+age_legend_html <- paste(
+  '<div style="display: inline-block; margin-bottom: 10px;">',
+  '<div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Age Band (Always Visible)</div>',
+  paste(sapply(seq_along(age_bands), function(i) {
+    paste0(
+      '<div style="display: inline-block; margin-right: 12px; margin-bottom: 3px;">',
+      '<span style="display: inline-block; width: 16px; height: 2px; background-color: ', 
+      age_colors[i], '; margin-right: 5px; vertical-align: middle;"></span>',
+      '<span style="font-size: 11px; vertical-align: middle;">', age_bands[i], '</span>',
+      '</div>'
+    )
+  }), collapse = ""),
+  '</div>'
+)
+
+combined_legend <- paste0(
+  '<div style="text-align: center; margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">',
+  '<div style="margin-bottom: 15px;">', status_legend_html, '</div>',
+  '<div>', age_legend_html, '</div>',
+  '</div>'
+)
+
+# 13. Render UI (assuming Shiny or R Markdown)
+tagList(
+  div(style = "margin-bottom:20px;",
+      h3("Interactive Age‐Banded Fertility Dashboard"),
+      p("Use the dropdown to filter bars by labour status. Age band lines remain visible for all filters.")
+  ),
+  filter_ab,
+  hc_widget,
+  HTML(combined_legend)
+)
+
+chart
+
+library(htmlwidgets)
+
+chart <- chart %>%
+  onRender("
+    function(el, x) {
+      // Create dropdown
+      var container = document.createElement('div');
+      container.style.marginBottom = '10px';
+      var select = document.createElement('select');
+      select.innerHTML = `
+        <option value='labour'>Labour Force</option>
+        <option value='outside'>Outside Labour Force</option>
+      `;
+      select.style.padding = '4px';
+      container.appendChild(select);
+      el.parentNode.insertBefore(container, el);
+
+      function toggleGroup(selectedGroup) {
+        Highcharts.charts.forEach(chart => {
+          if (!chart) return;
+          chart.series.forEach(s => {
+            if (!s.userOptions.custom) return;
+            if (s.userOptions.custom.group === selectedGroup) {
+              s.show();
+            } else if (s.type === 'column') {
+              s.hide();
+            }
+          });
+        });
+      }
+
+      // Set initial view
+      toggleGroup('labour');
+
+      // Add listener
+      select.addEventListener('change', e => {
+        toggleGroup(e.target.value);
+      });
+    }
+  ")
+
+chart
+```
 
 ## v2 graph
 
@@ -1856,6 +2073,158 @@ tagList(
 )
 
 ```
+```{r}
+library(ggplot2)
+library(dplyr)
+library(crosstalk)
+library(scales)
+library(plotly)
+library(RColorBrewer)
+library(htmltools)
+
+# Load and clean data
+final_dataset <- read.csv("Singapore’s Fertility Crisis A Data-Driven Analysis of Socioeconomic Factors.csv")
+
+filtered_dataset <- final_dataset %>%
+  filter(age_band != "All") %>%
+  mutate(
+    marital_status  = tools::toTitleCase(trimws(as.character(marital_status))),
+    labour_status   = tools::toTitleCase(trimws(as.character(labour_status))),
+    age_band        = tools::toTitleCase(trimws(as.character(age_band))),
+    count           = as.numeric(as.character(count)),
+    fertility_rate  = as.numeric(as.character(fertility_rate))
+  )
+
+# SharedData for interactivity
+shared_data <- SharedData$new(filtered_dataset, group = "full_filter")
+
+# Filter controls
+filter_marital <- filter_select("filter_marital", "Marital Status:", shared_data, ~marital_status)
+filter_labour  <- filter_select("filter_labour", "Labour Status:", shared_data, ~labour_status)
+filter_ageband <- filter_select("filter_ageband", "Age Band:", shared_data, ~age_band)
+
+# Colors
+labour_colors <- setNames(brewer.pal(3, "Set2")[1:2], unique(filtered_dataset$labour_status))
+age_colors <- setNames(brewer.pal(length(unique(filtered_dataset$age_band)), "Dark2"),
+                       unique(filtered_dataset$age_band))
+
+# Scaling factor
+scale_factor <- max(filtered_dataset$count, na.rm = TRUE) / max(filtered_dataset$fertility_rate, na.rm = TRUE)
+
+# Plot
+p <- ggplot() +
+  geom_col(
+    data = shared_data,
+    aes(
+      x = factor(year),
+      y = count,
+      fill = labour_status,
+      group = labour_status,
+      text = paste0(
+        "Year: ", year,
+        "<br>Marital Status: ", marital_status,
+        "<br>Labour Status: ", labour_status,
+        "<br>Count: ", comma(count)
+      )
+    ),
+    position = position_dodge(width = 0.7),
+    width = 0.6,
+    colour = "white",
+    size = 0.2,
+    alpha = 0.8
+  ) +
+  geom_line(
+    data = shared_data,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,
+      group = age_band,
+      colour = age_band,
+      text = paste0(
+        "Year: ", year,
+        "<br>Age Band: ", age_band,
+        "<br>Fertility Rate: ", round(fertility_rate, 2)
+      )
+    ),
+    size = 1.2,
+    alpha = 0.9
+  ) +
+  geom_point(
+    data = shared_data,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,
+      group = age_band,
+      colour = age_band
+    ),
+    size = 2,
+    alpha = 0.9
+  ) +
+  scale_fill_manual(values = labour_colors) +
+  scale_colour_manual(values = age_colors) +
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(~ . / scale_factor,
+                        name = "Fertility Rate (per thousand females)",
+                        labels = label_number(accuracy = 0.1))
+  ) +
+  labs(
+    title = "Fertility Rates vs Labour Participation",
+    subtitle = "Bars: Labour Status; Lines: Fertility by Age Band",
+    x = "Year",
+    caption = "Source: SingStat & data.gov.sg"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+# Plotly conversion
+plotly_output <- ggplotly(p, tooltip = "text")
+
+# Legend
+labour_legend <- paste(
+  '<div style="font-weight:bold;margin-bottom:8px;">Labour Status</div>',
+  paste(sapply(names(labour_colors), function(label) {
+    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
+            labour_colors[[label]], label)
+  }), collapse = "")
+)
+
+age_legend <- paste(
+  '<div style="font-weight:bold;margin-top:15px;margin-bottom:8px;">Age Bands</div>',
+  paste(sapply(names(age_colors), function(label) {
+    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
+            age_colors[[label]], label)
+  }), collapse = "")
+)
+
+combined_legend <- paste0(
+  '<div style="margin-top:20px;padding:10px;background:#f9f9f9;border:1px solid #ccc;border-radius:5px;">',
+  labour_legend, age_legend,
+  '</div>'
+)
+
+# Final UI
+tagList(
+  div(style = "margin-bottom:20px;",
+      h3("Interactive Fertility & Labour Dashboard"),
+      p("Use filters to explore female labour force counts and age-banded fertility rates.")
+  ),
+  div(style = "display: flex; gap: 15px; margin-bottom: 20px;",
+      filter_marital,
+      filter_labour,
+      filter_ageband
+  ),
+  plotly_output,
+  HTML(combined_legend)
+)
+
+```
+
 ------------------------------------------------------------------------
 
 faceted ggiraph

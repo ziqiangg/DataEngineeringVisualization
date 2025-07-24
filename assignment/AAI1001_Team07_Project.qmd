@@ -50,6 +50,7 @@ library(forcats)
 library(DT) #test
 library(glue) # for cleaner HTML tool tips
 library(patchwork)
+library(purrr)
 # may not be needed/not used
 # library(directlabels) # for categorical text labeling
 # library(ggforce) # for enclosing shapes
@@ -996,81 +997,143 @@ tagList(
 
 ```
 
-faceted ggiraph v2, the checkboxes not working
+faceted ggiraph v2, the checkboxes not working, dropdown not working but honeslty i think we can say that this is used for more detailed look / comparison
 
 ```{r, echo=TRUE, fig.width=12, fig.height=8}
-# — DATA PREP (as before) —
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. Compute agg_counts
+# ──────────────────────────────────────────────────────────────────────────────
 agg_counts <- final_dataset %>%
   group_by(year, marital_status, labour_status) %>%
-  summarise(count = sum(count, na.rm=TRUE), .groups="drop")
+  summarise(count = sum(count, na.rm = TRUE), .groups="drop")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. Prepare bar tooltips and IDs
+# ──────────────────────────────────────────────────────────────────────────────
 tooltip_df <- agg_counts %>%
-  pivot_wider(names_from=labour_status, values_from=count, values_fill=list(count=0)) %>%
-  rename(in_LF=labour_force, out_LF=outside_labour_force) %>%
+  pivot_wider(
+    names_from  = labour_status,
+    values_from = count,
+    values_fill = list(count=0)
+  ) %>%
+  rename(in_LF = labour_force, out_LF = outside_labour_force) %>%
   mutate(
-    tooltip = paste0("Year: ",year,"<br/>",
-                     "Marital Status: ",marital_status,"<br/>",
-                     "In LF: ",comma(in_LF),"k<br/>",
-                     "Out LF: ",comma(out_LF),"k"),
+    tooltip = paste0(
+      "Year: ", year, "<br/>",
+      "Marital Status: ", marital_status, "<br/>",
+      "In LF: ", comma(in_LF), "k<br/>",
+      "Out LF: ", comma(out_LF), "k"
+    ),
+    # This is the unique ID for each bar‐pair
     bar_id = paste(year, marital_status)
   ) %>%
-  pivot_longer(c(in_LF,out_LF), names_to="labour_status", values_to="count") %>%
-  mutate(labour_status = recode(labour_status,
-                                in_LF="labour_force",
-                                out_LF="outside_labour_force"))
+  pivot_longer(
+    cols      = c(in_LF, out_LF),
+    names_to  = "labour_status",
+    values_to = "count"
+  ) %>%
+  mutate(
+    labour_status = recode(
+      labour_status,
+      in_LF  = "labour_force",
+      out_LF = "outside_labour_force"
+    )
+  )
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 3. Compute fertility_ab & give each point *all* bar_ids for its year
+# ──────────────────────────────────────────────────────────────────────────────
+# Get all marital_status values
 all_status <- unique(agg_counts$marital_status)
+
 fertility_ab <- final_dataset %>%
-  filter(age_band!="All") %>%
+  filter(age_band != "All") %>%
   distinct(year, age_band, fertility_rate) %>%
   arrange(age_band, year) %>%
   group_by(age_band) %>%
   mutate(
-    tooltip = paste0("Year: ",year,"<br/>",
-                     "Age Band: ",age_band,"<br/>",
-                     "Fertility Rate: ",round(fertility_rate,2)),
+    tooltip = paste0(
+      "Year: ", year, "<br/>",
+      "Age Band: ", age_band, "<br/>",
+      "Fertility Rate: ", round(fertility_rate,2)
+    ),
+    # Build a space-separated string of *all* status‐specific IDs for that year
     data_id = map_chr(year, ~ paste(paste(.x, all_status), collapse=" "))
-  ) %>% ungroup()
-scale_factor <- max(tooltip_df$count, na.rm=TRUE) / max(fertility_ab$fertility_rate, na.rm=TRUE)
+  ) %>%
+  ungroup()
 
-# — CROSSTALK SHARED DATA —
-counts_sd <- SharedData$new(tooltip_df,   key=~bar_id,  group="ms_filter")
-fert_sd   <- SharedData$new(fertility_ab, key=~data_id, group="ms_filter")
+# figure out scaling
+scale_factor <- max(agg_counts$count) / max(fertility_ab$fertility_rate)
 
-# — BUILD THE CONTROL & PLOT —
-marital_ctl <- filter_checkbox(
-  id         = "marital_filter",
-  label      = "Show Marital Status:",
-  sharedData = counts_sd,
-  group      = ~marital_status
-)
-
-bar_plot <- ggplot(counts_sd) +
-  geom_col_interactive(aes(x=year, y=count, fill=marital_status,
-                           data_id=bar_id, tooltip=tooltip),
-                       position=position_dodge(0.8), alpha=0.8) +
+# ──────────────────────────────────────────────────────────────────────────────
+# 4. Build bar_plot
+# ──────────────────────────────────────────────────────────────────────────────
+bar_plot <- ggplot(tooltip_df) +
+  geom_col_interactive(
+    aes(
+      x       = year,
+      y       = count,
+      fill    = marital_status,
+      data_id = bar_id,
+      tooltip = tooltip
+    ),
+    position = position_dodge(width=0.8),
+    alpha    = 0.8
+  ) +
   scale_y_continuous(name="Female Population (thousands)", labels=comma) +
   scale_fill_brewer(palette="Set1", name="Marital Status") +
-  facet_wrap(~labour_status, ncol=1,
-             labeller=labeller(labour_status=c(
-               labour_force="In Labour Force",
-               outside_labour_force="Outside Labour Force"
-             ))) +
+  facet_wrap(~ labour_status, ncol=1,
+             labeller = labeller(
+               labour_status = c(
+                 labour_force         = "In Labour Force",
+                 outside_labour_force = "Outside Labour Force"
+               )
+             )) +
   theme_minimal(base_size=10) +
-  theme(legend.position="bottom", strip.text=element_text(face="bold", size=12))
+  theme(legend.position="bottom",
+        strip.text=element_text(face="bold", size=12))
 
-line_plot <- ggplot(fert_sd) +
-  geom_line_interactive(aes(x=year, y=fertility_rate*scale_factor, colour=age_band,
-                            group=age_band, data_id=data_id, tooltip=tooltip), size=1) +
-  geom_point_interactive(aes(x=year, y=fertility_rate*scale_factor, colour=age_band,
-                             group=age_band, data_id=data_id, tooltip=tooltip), size=3) +
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5. Build line_plot
+# ──────────────────────────────────────────────────────────────────────────────
+line_plot <- ggplot(fertility_ab) +
+  geom_line_interactive(
+    aes(
+      x       = year,
+      y       = fertility_rate * scale_factor,
+      colour  = age_band,
+      group   = age_band,
+      data_id = data_id,
+      tooltip = tooltip
+    ), size=1
+  ) +
+  geom_point_interactive(
+    aes(
+      x       = year,
+      y       = fertility_rate * scale_factor,
+      colour  = age_band,
+      group   = age_band,
+      data_id = data_id,
+      tooltip = tooltip
+    ), size=3
+  ) +
   scale_y_continuous(name="Fertility Rate × Scale Factor", labels=comma) +
   scale_colour_brewer(palette="Set2", name="Age Band") +
   theme_minimal(base_size=10) +
-  theme(legend.position="bottom", strip.text=element_text(face="bold", size=12))
+  theme(legend.position="bottom",
+        strip.text=element_text(face="bold", size=12))
 
-combined <- bar_plot + line_plot + plot_layout(ncol=1, heights=c(2,1))
+# ──────────────────────────────────────────────────────────────────────────────
+# 6. Combine & render
+# ──────────────────────────────────────────────────────────────────────────────
+combined_plot <- bar_plot + line_plot + plot_layout(ncol=1, heights=c(2,1))
 
 gir <- girafe(
-  ggobj     = combined, width_svg=12, height_svg=8,
+  ggobj     = combined_plot,
+  width_svg = 12,
+  height_svg= 8,
   options   = list(
     opts_hover(css="stroke-width:0.3px;opacity:2;"),
     opts_hover_inv(css="opacity:0.2;"),
@@ -1081,13 +1144,181 @@ gir <- girafe(
   )
 )
 
-# — RENDER CONTROL + PLOT TOGETHER —
+gir
+```
+
+this is the ggplot and plotly which can filter by all dimensions but is unable to do ages correctly only 15-19 is appearing and we do not know why the other ages are not hiding / showing properly. (robin in the future i think it is becuz the summarising is done only for 15-19)
+
+```{r}
+
+# Load and clean data
+final_dataset <- read.csv("Singapore’s Fertility Crisis A Data-Driven Analysis of Socioeconomic Factors.csv")
+
+# SharedData: use one source for everything
+shared_data <- SharedData$new(final_dataset, group = "common_group")
+
+# Clean and prep dataset
+final_data <- shared_data$data() %>%
+  mutate(
+    marital_status = tools::toTitleCase(trimws(as.character(marital_status))),
+    labour_status  = tools::toTitleCase(trimws(as.character(labour_status))),
+    age_band       = tools::toTitleCase(trimws(as.character(age_band))),
+    count          = as.numeric(as.character(count)),
+    fertility_rate = as.numeric(as.character(fertility_rate))
+  )
+
+# Split into two datasets
+fertility_data <- final_data %>%
+  filter(age_band != "All")
+
+bar_data <- final_data %>%
+  filter(age_band == "All") %>%
+  group_by(year, marital_status, labour_status) %>%
+  summarise(total_count = sum(count, na.rm = TRUE), .groups = "drop")
+
+# Wrap into SharedData objects (same group = filters apply to both)
+shared_fertility <- SharedData$new(fertility_data, group = "common_group")
+shared_bar <- SharedData$new(bar_data, group = "common_group")
+
+# Filter controls
+filter_marital <- filter_select("filter_marital", "Marital Status:", shared_fertility, ~marital_status)
+filter_labour  <- filter_select("filter_labour", "Labour Status:", shared_fertility, ~labour_status)
+filter_ageband <- filter_select("filter_ageband", "Age Band:", shared_fertility, ~age_band)
+
+# Colors
+marital_colors <- setNames(brewer.pal(length(unique(bar_data$marital_status)), "Set2"),
+                           unique(bar_data$marital_status))
+age_colors <- setNames(brewer.pal(length(unique(fertility_data$age_band)), "Dark2"),
+                       unique(fertility_data$age_band))
+
+# Scaling factor for dual axis
+scale_factor <- max(bar_data$total_count, na.rm = TRUE) / max(fertility_data$fertility_rate, na.rm = TRUE)
+
+# Combined plot
+p <- ggplot() +
+  # Bar plot (stacked by marital status, dodged by labour status)
+  geom_col(
+    data = shared_bar,
+    aes(
+      x = as.factor(year),
+      y = total_count,
+      fill = marital_status,
+      group = labour_status,
+      text = paste0(
+        "Year: ", year,
+        "<br>Labour Status: ", labour_status,
+        "<br>Marital Status: ", marital_status,
+        "<br>Count: ", comma(total_count)
+      )
+    ),
+    position = position_dodge(width = 0.6),
+    width = 0.5,
+    colour = "white",
+    size = 0.2,
+    alpha = 0.85
+  ) +
+
+  # Fertility rate line and points
+  geom_line(
+    data = shared_fertility,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,
+      group = age_band,
+      colour = age_band,
+      text = paste0(
+        "Year: ", year,
+        "<br>Age Band: ", age_band,
+        "<br>Fertility Rate: ", round(fertility_rate, 2)
+      )
+    ),
+    size = 1.2,
+    alpha = 0.9
+  ) +
+  geom_point(
+    data = shared_fertility,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,
+      colour = age_band
+    ),
+    size = 2,
+    alpha = 0.9
+  ) +
+
+  scale_fill_manual(values = marital_colors) +
+  scale_colour_manual(values = age_colors) +
+
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(~ . / scale_factor,
+                        name = "Fertility Rate (per thousand females)",
+                        labels = label_number(accuracy = 0.1))
+  ) +
+  labs(
+    title = "Fertility Rates vs Labour Participation",
+    subtitle = "Bars: Population by Marital & Labour Status; Lines: Fertility by Age Band",
+    x = "Year",
+    caption = "Source: SingStat & data.gov.sg"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+# Convert to interactive plotly plot
+plotly_output <- ggplotly(p, tooltip = "text")
+
+
+
+# Legend HTML
+marital_legend <- paste(
+  '<div style="font-weight:bold;margin-bottom:8px;">Marital Status</div>',
+  paste(sapply(names(marital_colors), function(label) {
+    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
+            marital_colors[[label]], label)
+  }), collapse = "")
+)
+
+age_legend <- paste(
+  '<div style="font-weight:bold;margin-top:15px;margin-bottom:8px;">Age Bands</div>',
+  paste(sapply(names(age_colors), function(label) {
+    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
+            age_colors[[label]], label)
+  }), collapse = "")
+)
+
+combined_legend <- paste0(
+  '<div style="margin-top:20px;padding:10px;background:#f9f9f9;border:1px solid #ccc;border-radius:5px;">',
+  marital_legend, age_legend,
+  '</div>'
+)
+
+# Final UI layout
 tagList(
-  marital_ctl,
-  gir
+  div(style = "margin-bottom:20px;",
+      h3("Interactive Fertility & Labour Dashboard"),
+      p("Use filters to explore female labour force counts and age-banded fertility rates.")
+  ),
+  div(style = "display: flex; gap: 15px; margin-bottom: 20px;",
+      filter_marital,
+      filter_labour,
+      filter_ageband
+  ),
+  plotly_output,
+  HTML(combined_legend)
 )
 ```
+```{r}
+
+```
 **Summary of Improvements:**
+
+
+
 
 - Streamlined data prep: Combined mutate() calls and used glue::glue() for cleaner, HTML‐enhanced tooltips.
 

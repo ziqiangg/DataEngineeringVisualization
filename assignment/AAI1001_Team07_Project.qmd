@@ -852,7 +852,7 @@ cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3
 - Overall, the data show a **consistent downward trend in fertility**, reflecting **structural changes** in: *Social norms*, *Career aspirations* & *Marriage and childbirth timing*
 
 # visualisation
-this is bad attempt at all dimension filtering
+stacked version where it does not split by marital status, hovering on bar segments does not show age band
 ```{r}
 
 # Load and clean data
@@ -996,6 +996,157 @@ tagList(
   HTML(combined_legend)
 )
 
+```
+
+this is dodged version where it further splits by marital status, shows age bands when hovering over bar segments
+```{r}
+# Load and clean data
+filtered_dataset <- final_dataset %>%
+  filter(age_band != "All") %>%
+  mutate(
+    marital_status  = tools::toTitleCase(trimws(as.character(marital_status))),
+    labour_status   = tools::toTitleCase(trimws(as.character(labour_status))),
+    age_band        = tools::toTitleCase(trimws(as.character(age_band))),
+    count           = as.numeric(as.character(count)),
+    fertility_rate  = as.numeric(as.character(fertility_rate))
+  )
+
+# SharedData for interactivity
+shared_data <- SharedData$new(filtered_dataset, group = "full_filter")
+
+# Filter controls
+filter_marital <- filter_select("filter_marital", "Marital Status:", shared_data, ~marital_status)
+filter_labour  <- filter_select("filter_labour", "Labour Status:", shared_data, ~labour_status)
+filter_ageband <- filter_select("filter_ageband", "Age Band:", shared_data, ~age_band)
+
+# Custom Colors for Marital Status
+marital_colors <- c(
+  "Single" = "#32CD32",  # Light Green
+  "Married" = "#1E90FF",  # Dodger Blue
+  "Widowed_divorced" = "#FF4500"  # Orange Red
+)
+
+# Custom Colors for Age Bands
+age_colors <- setNames(brewer.pal(length(unique(filtered_dataset$age_band)), "Dark2"),
+                       unique(filtered_dataset$age_band))
+
+# Scaling factor
+scale_factor <- max(filtered_dataset$count, na.rm = TRUE) / max(filtered_dataset$fertility_rate, na.rm = TRUE)
+
+# Plot
+p <- ggplot() +
+  geom_col(
+    data = shared_data,
+    aes(
+      x = factor(year),
+      y = count,
+      fill = marital_status,  # Segments by marital status
+      group = interaction(labour_status, marital_status),  # Ensure the bars are grouped by both labour and marital status
+      text = paste0(
+        "Year: ", year,
+        "<br>Marital Status: ", marital_status,
+        "<br>Labour Status: ", labour_status,
+        "<br>Age Band: ", age_band,  # Adding age band to the bars' tooltip
+        "<br>Count: ", comma(count)
+      )
+    ),
+    position = position_dodge(width = 0.7),
+    width = 0.6,
+    colour = "white",
+    size = 0.2,
+    alpha = 0.6  # Reduced alpha for better visibility of segments
+  ) +
+  geom_line(
+    data = shared_data,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,
+      group = age_band,
+      colour = age_band
+    ),
+    size = 0.8,  # Reduced line size for a more subtle appearance
+    alpha = 0.6  # Reduced alpha for the line
+  ) +
+  geom_point(
+    data = shared_data,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,
+      group = age_band,
+      colour = age_band,
+      text = paste0(
+        "Year: ", year,
+        "<br>Age Band: ", age_band,
+        "<br>Fertility Rate: ", round(fertility_rate, 2)  # Show fertility rate for age band
+      )
+    ),
+    size = 1,  # Reduced point size
+    alpha = 0.6  # Reduced point alpha for subtlety
+  ) +
+  scale_fill_manual(values = marital_colors) +  # Apply custom colors for marital status
+  scale_colour_manual(values = age_colors) +  # Apply custom colors for age bands
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = comma,
+    sec.axis = sec_axis(~ . / scale_factor,
+                        name = "Fertility Rate (per thousand females)",
+                        labels = label_number(accuracy = 0.1))
+  ) +
+  labs(
+    title = "Fertility Rates vs Labour Participation",
+    subtitle = "Bars: Segmented by Marital Status; Points: Fertility Rates by Age Band",
+    x = "Year",
+    caption = "Source: SingStat & data.gov.sg"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"  # No legend for now, as we've defined the colors manually
+  )
+
+# Plotly conversion (only points have tooltips)
+plotly_output <- ggplotly(p, tooltip = "text")
+
+# Legend for Marital Status and Age Bands
+labour_legend <- paste(
+  '<div style="font-weight:bold;margin-bottom:8px;">Marital Status</div>',
+  paste(sapply(names(marital_colors), function(label) {
+    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
+            marital_colors[[label]], label)
+  }), collapse = "")
+)
+
+age_legend <- paste(
+  '<div style="font-weight:bold;margin-top:15px;margin-bottom:8px;">Age Bands</div>',
+  paste(sapply(names(age_colors), function(label) {
+    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
+            age_colors[[label]], label)
+  }), collapse = "")
+)
+
+combined_legend <- paste0(
+  '<div style="margin-top:20px;padding:10px;background:#f9f9f9;border:1px solid #ccc;border-radius:5px;">',
+  labour_legend, age_legend,
+  '</div>'
+)
+
+# Final UI Layout
+tagList(
+  div(
+    style = "margin-bottom:20px;",
+    h3("Interactive Fertility & Labour Dashboard"),
+    p("Use filters to explore female labour force counts and age-banded fertility rates.")
+  ),
+  div(
+    style = "display: flex; gap: 15px; margin-bottom: 20px;",
+    filter_marital,
+    filter_labour,
+    filter_ageband
+  ),
+  plotly_output,
+  HTML(combined_legend)
+)
 ```
 
 faceted ggiraph v2, the checkboxes not working, dropdown not working but honeslty i think we can say that this is used for more detailed look / comparison

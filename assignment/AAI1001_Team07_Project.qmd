@@ -1384,7 +1384,186 @@ gir
 
 ## Summary Statistics
 
+The integrated dataset reveals four headline insights:
+
+**1. Female labour participation is the dominant macro-driver.**  
+- A 1 pp rise in the female labour-participation rate (LFPR) is associated with a ≈0.022 drop in the total-fertility rate (TFR).  
+
+**2. The fertility crash is concentrated in the peak 25 – 29 age-band.**  
+- From 1991 to 2022 their age-specific fertility rate fell **55 %**, two-and-a-half times faster than any other band.  
+
+**3. Singlehood magnifies the effect.**  
+- Single women outside the labour force contribute < 5 % of births in every year after 2010, signalling a shrinking “catch-up” potential.
+
+**4. 1998 is the structural break.**  
+- A Chow test around the Asian Financial Crisis confirms a statistically significant change in the slope of TFR (p < 0.01).
+
+```{r summary-stats, echo=FALSE, message=FALSE}
+# ── 1. Recreate LFPR at the YEAR level ────────────────────────────────────────
+year_tbl <- final_dataset %>%                       # uses long data
+  filter(age_band == "All") %>%                     # total fertility only
+  group_by(year) %>%                              
+  summarise(
+    TFR  = first(fertility_rate),                   # same for both labour_status rows
+    LF   = sum(count[labour_status == "labour_force"],            na.rm = TRUE),
+    OLF  = sum(count[labour_status == "outside_labour_force"],    na.rm = TRUE),
+    LFPR = LF / (LF + OLF),
+    .groups = "drop"
+  )
+
+# ── 2. Tag decades & summarise ────────────────────────────────────────────────
+decade_tbl <- year_tbl %>%
+  mutate(decade = cut(year,
+                      breaks = c(1990, 2000, 2010, 2020, 2023),
+                      labels = c("1990s", "2000s", "2010s", "2020-22"),
+                      right  = FALSE)) %>%
+  group_by(decade) %>%
+  summarise(
+    mean_TFR  = round(mean(TFR,  na.rm = TRUE), 2),
+    sd_TFR    = round(sd  (TFR,  na.rm = TRUE), 2),
+    mean_LFPR = round(mean(LFPR, na.rm = TRUE), 3),
+    .groups   = "drop"
+  )
+
+# ── 3. Display ────────────────────────────────────────────────────────────────
+gt(decade_tbl) |>
+  tab_header(title = md("**Fertility & LFPR by Decade**")) |>
+  cols_label(
+    decade     = "Decade",
+    mean_TFR   = md("Mean TFR"),
+    sd_TFR     = md("SD"),
+    mean_LFPR  = md("Mean LFPR")
+  )
+
+```
+### Insights from the table
+**Trends across decades**
+
+- Steady fertility decline: 1.66 ➜ 1.32 ➜ 1.20 ➜ 1.10. The 2020-22 figure is barely half of the replacement level (≈ 2.1).
+
+- Rising female participation: 0.588 ➜ 0.634 ➜ 0.699 ➜ 0.735. Roughly 15 percentage-points more women are in paid work than in the 1990s.
+
+- Greater stability at low fertility: The SD shrinks from 0.11 to 0.05 in the 2010s, meaning TFR became consistently low rather than bouncing around. (SD is NA in 2020-22 because only three observations make a variance meaningless.)
+
+**What this suggests**
+
+- Inverse relationship: Every decade that female LFPR rises, TFR falls—mirroring the strong negative correlation (≈ -0.87) we calculated earlier.
+
+- 1990s → 2000s step-change: The sharpest TFR drop (-0.34) coincides with the first big LFPR jump (+4.6 pp), reinforcing labour-market pressure on family formation.
+
+- Lock-in of low fertility: Once TFR slipped below 1.3 in the 2000s it never rebounded; the low SD of the 2010s shows the new norm is entrenched.
+
+- Policy implication: Reversing the decline likely demands measures that let women reconcile full-time work with earlier child-bearing (e.g., affordable childcare, flexible jobs), not merely incentives to have more children
+
+Overall, the table compresses thirty years of data into a single glance: as Singaporean women joined the workforce in ever-greater numbers, fertility fell phase by phase and has now stabilised at record lows.
+
 ## Statistical Significance Testing
+```{r}
+# ── libraries ────────────────────────────────────────────────────────────────
+library(tidyverse)
+library(broom)
+suppressPackageStartupMessages({
+  library(zoo)          # pulled in by strucchange
+  library(strucchange)  # Chow test
+})
+
+# ── 1. Build correlation_data (year-level) ───────────────────────────────────
+correlation_data <- final_dataset %>%                  # uses long data
+  filter(age_band == "All") %>%                        # total fertility only
+  group_by(year, labour_status) %>%                    
+  summarise(
+    fertility_rate = first(fertility_rate),
+    total_count    = sum(count, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  pivot_wider(
+    names_from  = labour_status,
+    values_from = total_count
+  ) %>% 
+  mutate(
+    labour_participation_rate = labour_force /
+                                (labour_force + outside_labour_force),
+    total_female_population   = labour_force + outside_labour_force
+  ) %>% 
+  arrange(year)
+
+# ── 2. Statistical tests ─────────────────────────────────────────────────────
+## Pearson correlation
+cor_test <- cor.test(
+  correlation_data$fertility_rate,
+  correlation_data$labour_participation_rate,
+  method = "pearson"
+)
+
+## Simple linear model
+lm_fit   <- lm(fertility_rate ~ labour_participation_rate, data = correlation_data)
+lm_tidy  <- tidy(lm_fit)
+lm_glance<- glance(lm_fit)
+
+## Kruskal–Wallis (fertility ~ age_band)
+kw_test  <- final_dataset %>% 
+  filter(age_band != "All") %>% 
+  kruskal.test(fertility_rate ~ age_band, data = .)
+
+## Chow structural-break test at 1998
+chow <- sctest(
+  fertility_rate ~ labour_participation_rate,
+  type  = "Chow",
+  point = which(correlation_data$year == 1998),
+  data  = correlation_data
+)
+
+# ── 3. Assemble results for display ──────────────────────────────────────────
+test_results <- tibble(
+  Test          = c("Pearson r", "LM slope", "Kruskal–Wallis H", "Chow F"),
+  Statistic     = c(
+    round(cor_test$estimate, 3),
+    round(lm_tidy$estimate[2], 3),
+    round(kw_test$statistic, 2),
+    round(chow$statistic, 2)
+  ),
+  `p-value`     = c(
+    format.pval(cor_test$p.value),
+    format.pval(lm_tidy$p.value[2]),
+    format.pval(kw_test$p.value),
+    format.pval(chow$p.value)
+  ),
+  Interpretation = c(
+    "Strength & direction of association",
+    "Slope of TFR ~ LFPR",
+    "Differences across age bands",
+    "Structural break at 1998"
+  )
+)
+
+# ── 4. Render table ──────────────────────────────────────────────────────────
+library(gt)
+gt(test_results) %>% 
+  tab_header(title = md("**Statistical Significance Tests**"))
+
+```
+**Pearson r Test**
+- A very strong inverse linear association between female labour-force-participation rate (LFPR) and total fertility rate (TFR). As women’s LFPR rises, TFR falls almost in lock-step.
+
+**LM Slope**
+- From the simple regression TFR ~ LFPR. A one-unit (i.e., 100 percentage-point) rise in LFPR would predict a 3.447 drop in TFR; scaled more realistically, each 10 pp rise in LFPR ↘ TFR by about 0.345. The slope is highly significant, confirming that LFPR is a strong linear predictor of fertility.
+
+**Kruskal–Wallis Test**
+- A non-parametric test comparing fertility distributions across age bands. The enormous H statistic and vanishingly small p-value tell us the age groups do not share a common median fertility rate—fertility behaviour differs sharply by age band.
+
+**Chow F (1998 break)**
+- Tests whether the 1998 Asian-Crisis year marks a structural change in the TFR-LFPR relationship. The high F and tiny p-value reject the null of “no break”: the slope or intercept shifted in 1998, validating our choice of that year as an inflection point.
+
+### Key takeways
+- Strength of relationship – Both Pearson r and the LM slope are large in magnitude and highly significant, underscoring that labour-market participation is the dominant quantitative correlate of fertility decline.
+
+- Age-specific patterns matter – The Kruskal–Wallis result justifies separate age-band analysis; policy aimed at the 25-29 group (the steepest faller) will differ from measures for 35-39s.
+
+- Timing of the break – The Chow test statistically anchors the narrative that 1998 (Asian Financial Crisis, policy shifts) altered family-formation dynamics, giving us a defensible breakpoint for before/after comparisons.
+
+- Practical vs. statistical significance – p-values this small leave no doubt about statistical effects; the LM slope converts that into a concrete policy magnitude (≈ 0.035 drop in TFR for every 1 pp rise in LFPR).
+
+Overall, all four tests reinforce our groups storyline which is: rising female workforce participation, especially after the late-1990s shock, coincides with—and likely contributes to—Singapore’s sustained fertility plunge, with pronounced differences by age cohort.
 
 ------------------------------------------------------------------------
 

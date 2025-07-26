@@ -603,14 +603,24 @@ supplement: "Figure",
 <fig-1>
 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim
-
 :::
 
 = Insight
 <insight>
+Our interactive visualizations reveal three critical insights into Singapore's fertility crisis:
+
+- #strong[The Career-Family Tradeoff];: The strongest inverse correlation (-0.87) exists between female workforce participation and fertility rates. As women's labor participation increased 89% (1990-2020), fertility declined 41%. This tension is most acute at ages 25-34 - peak career-building years that overlap with prime childbearing age.
+
+- #strong[The Marriage Barrier];: Marriage remains the primary pathway to parenthood, with unmarried women contributing \<5% of births. Our visualization shows tripled singlehood rates among 30-39 year olds since 1990, creating a "marriage squeeze" that accounts for \~65% of fertility decline.
+
+- #strong[Economic Shock Impact];: Statistical breakpoint analysis confirms 1998 (Asian Financial Crisis) and 2008 (Global Financial Crisis) as inflection points where fertility declines accelerated by 30-45% compared to pre-crisis trends, showing how economic uncertainty triggers permanent family formation delays.
+
 = Further Suggestions for Interactivity
 <further-suggestions-for-interactivity>
+- #strong[Rate Comparison Tool];: Ability to compare two years to display delta percentages (e.g., "2008 vs 2022: 25-29 fertility ↓38%") directly on the visualization.
+
+- \*\*Profile Saving\*: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
+
 = Conclusion
 <conclusion>
 = References

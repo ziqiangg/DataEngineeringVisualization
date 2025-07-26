@@ -94,7 +94,7 @@ Singapore's total fertility rate has plummeted to historic lows, dropping below 
 
 Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that visualisations from [@tan2024a] neglect. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from [@singstat2023] as well as labour participation and marital status data from [@datagovsg2020a] and [@datagovsg2020b].
 
-**Disclaimer:** *To note that data for 1995, 2000 and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years due to the conduct of the Population Census 2000, General Household Surveys 1995 and 2005 by the Singapore Department of Statistics.*
+**Disclaimer:** *To note that population data for 1995, 2000 and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years due to the conduct of the Population Census 2000, General Household Surveys 1995 and 2005 by the Singapore Department of Statistics.*
 
 ## Research Questions
 
@@ -279,7 +279,7 @@ The following steps will be taken to clean and reshape "`not_working`":
 "work" tibble is cleaned in a similar way to "not_working".
 
 ```{r data-cleaning, echo=TRUE}
-# Enhanced fertility data cleaning
+# fertility data cleaning
 fertility_clean <- fertility |>
   clean_names() |>
   rename(measure = data_series) |>
@@ -318,7 +318,7 @@ fertility_clean <- fertility |>
   filter(year >= 1990 & year <= 2020) |>
   select(year, age_band, fertility_rate = value, uom)
 
-# Enhanced labour force data cleaning
+# labour force data cleaning
 clean_labour_data <- function(data, value_col) {
   data |>
     clean_names() |>
@@ -612,13 +612,12 @@ final_dataset <- fertility_labour_joined |>
     names_to = "labour_status",
     values_to = "count"
   ) |>
-  group_by(year) |>
-  filter(!all(is.na(count))) |>  # Remove years with no labour data (1995, 2000, 2005)
-  ungroup() |>
   mutate(
-    count = replace_na(count, 0),
+    count = replace_na(count, 0),  # Replace NA with 0 for missing labour force data
+    fertility_rate = replace_na(fertility_rate, NA_real_)  # Ensure fertility rate is NA where missing
   ) |>
-  filter(!is.na(fertility_rate))  # Remove rows with missing fertility data
+  # Retain all years (including missing ones)
+  filter(!is.na(fertility_rate)) 
 ```
 
 ### Data Quality Validation
@@ -650,8 +649,8 @@ if ("year" %in% names(final_dataset)) {
     "None"
   }
   footer_note <- paste0(
-    "Year range: ", yr_min, "–", yr_max,
-    " | Missing years: ", missing_txt
+    "Year range: ", yr_min + 1, "–", yr_max,
+    " | Missing years: ", "1995, 2000 & 2005"
   )
 } else {
   footer_note <- NULL
@@ -856,7 +855,6 @@ stacked version where it does not split by marital status, hovering on bar segme
 ```{r}
 
 # Load and clean data
-final_dataset <- read.csv("Singapore’s Fertility Crisis A Data-Driven Analysis of Socioeconomic Factors.csv")
 
 filtered_dataset <- final_dataset %>%
   filter(age_band != "All") %>%
@@ -1000,7 +998,6 @@ tagList(
 
 this is dodged version where it further splits by marital status, shows age bands when hovering over bar segments
 ```{r}
-
 # Load and clean data
 filtered_dataset <- final_dataset %>% 
   filter(age_band != "All") %>% 
@@ -1116,30 +1113,69 @@ p <- ggplot() +
 # Plotly conversion (only points have tooltips)
 plotly_output <- ggplotly(p, tooltip = "text")  # Ensures the custom text in tooltips is used
 
-# Legend for Marital Status and Age Bands
-labour_legend <- paste(
-  '<div style="font-weight:bold;margin-bottom:8px;">Marital Status</div>',
-  paste(sapply(names(marital_colors), function(label) {
-    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
-            marital_colors[[label]], label)
-  }), collapse = "")
+# Create new custom legend HTML with improved layout
+# Get unique age bands (excluding NA)
+age_bands <- na.omit(unique(filtered_dataset$age_band))
+
+# Split into two columns (first 4 in col1, next 3 in col2)
+col1_bands <- head(age_bands, 4)
+col2_bands <- tail(age_bands, 3)
+
+# Generate HTML for each column
+col1_html <- paste0(
+  sapply(col1_bands, function(b) {
+    sprintf('<div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+               <div style="width: 15px; height: 15px; background-color: %s; border-radius: 3px;"></div>
+               <span>%s</span>
+             </div>', age_colors[b], b)
+  }), 
+  collapse = ""
 )
 
-age_legend <- paste(
-  '<div style="font-weight:bold;margin-top:15px;margin-bottom:8px;">Age Bands</div>',
-  paste(sapply(names(age_colors), function(label) {
-    sprintf('<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:%s;margin-right:6px;"></span><span style="font-size:12px;">%s</span></div>',
-            age_colors[[label]], label)
-  }), collapse = "")
+col2_html <- paste0(
+  sapply(col2_bands, function(b) {
+    sprintf('<div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+               <div style="width: 15px; height: 15px; background-color: %s; border-radius: 3px;"></div>
+               <span>%s</span>
+             </div>', age_colors[b], b)
+  }), 
+  collapse = ""
 )
 
-combined_legend <- paste0(
-  '<div style="margin-top:20px;padding:10px;background:#f9f9f9;border:1px solid #ccc;border-radius:5px;">',
-  labour_legend, age_legend,
-  '</div>'
-)
+# Combined legend template
+combined_legend <- sprintf('
+<div style="display: flex; width: 100%%; gap: 15px; margin-top: 20px; font-family: Arial, sans-serif;">
+  <!-- Marital Status (1/3 width) -->
+  <div style="flex: 1; background-color: #f8f9fa; padding: 5px; border-radius: 5px; font-size: 12px;">
+    <div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Marital Status</div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 12px; height: 12px; background-color: #32CD32; border-radius: 3px;"></div>
+        <span>Single</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 12px; height: 12px; background-color: #1E90FF; border-radius: 3px;"></div>
+        <span>Married</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 12px; height: 12px; background-color: #FF4500; border-radius: 3px;"></div>
+        <span>Widowed/Divorced</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Age Bands (2/3 width) -->
+  <div style="flex: 2; background-color: #f8f9fa; padding: 5px; border-radius: 5px; font-size: 12px;">
+    <div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Age Band</div>
+    <div style="display: flex; gap: 15px;">
+      <div style="flex: 1;">%s</div>
+      <div style="flex: 1;">%s</div>
+    </div>
+  </div>
+</div>
+', col1_html, col2_html)
 
-# Final UI Layout
+# Final UI Layout with Footnote
 tagList(
   div(
     style = "margin-bottom:20px;",
@@ -1157,9 +1193,17 @@ tagList(
     filter_year  # Add the year slider to the layout
   ),
   plotly_output,
-  HTML(combined_legend)
+  HTML(combined_legend),  # Display the combined legend
+  
+  # Footnote Section
+  div(
+    style = "margin-top: 20px; font-size: 12px; color: #555; text-align: center;",
+    p("Population data for 1995, 2000, and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years."),
+    p("Source: data.gov.sg & SingStat")
+  )
 )
 ```
+
 
 faceted ggiraph v2, the checkboxes not working, dropdown not working but honeslty i think we can say that this is used for more detailed look / comparison
 
@@ -1317,7 +1361,7 @@ gir
 
 
 
-- Streamlined data prep: Combined mutate() calls and used glue::glue() for cleaner, HTML‐enhanced tooltips.
+- Streamlined data prep: Combined mutate() calls and used glue() for cleaner, HTML‐enhanced tooltips.
 
 - Cache chunk: Added cache=TRUE to avoid re‐computing on every render.
 

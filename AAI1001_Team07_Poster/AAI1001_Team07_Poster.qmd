@@ -11,18 +11,12 @@ format:
     footer-url: "&nbsp;"
     footer-emails: "Team 07"
     footer-color: "ebcfb2"
-    keywords: ["AAA", "BBB", "CCC"]
 ---
 
 
 # Introduction
 
 Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses **three decades of fertility and labour force data** to identify patterns and relationships that visualisations from the source neglects. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from different websites.
-
-:::{.callout-note}
-## Research Focus
-Understanding the underlying **socioeconomic factors** is crucial for policy formulation and national demographic sustainability.
-:::
 
 
 # Original Visualisation
@@ -44,7 +38,7 @@ Understanding the underlying **socioeconomic factors** is crucial for policy for
 
 1. **Inlcude data validation**: Add comprehensive data validation along with outlier analysis. This aims to ensure the accuracy and reliability of the data presented. 
 
-2. **Extended analysis**: Increase the range of the data to 1990-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
+2. **Extended analysis**: Increase the range of the data to 1991-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
 
 3. **Integrate socioeconomic factors**: Integrate socioeconomic factors such as labour force participation and marital status. This will provide a more holistic view of the factors influencing fertility rates. This allows for better policy formulation and understanding of the demographic trends.
 
@@ -53,16 +47,12 @@ Understanding the underlying **socioeconomic factors** is crucial for policy for
 
 # Implementation
 
-i. Data Sources
+## Data Sources
 
-| Dataset                   | Source      | Time Period      | Variables                                           | Records                 |
-|---------------------------|-------------|------------------|-----------------------------------------------------|-------------------------|
-| Fertility Rates           | SingStat    | 1960-2024        |Age-specific fertility rates, Total fertility rate   |17 variables wide format |
-| Labour Force (Working)    | data.gov.sg | 1991-2022        |Female labour force by age & marital status          |5 columns long format    |
-| Labour Force (Not working)| data.gov.sg | 1991-2022        |Females outside labour force by age & marital status |5 columns long format    |
+The datasets used here are from SingStat and data.gov.sg. The data is in the CSV format. They contain information abour fertility rates, labour force participation and marital status in Singapore.
 
 
-ii. Software
+## Software
 - `crosstalk` – Enables interactivity between HTML widgets
 - `tidyverse` – Loads core tidy data science packages like `ggplot2`, `dplyr` and `tidyr`
 - `viridis` – Provides colourblind-friendly color palettes for plots
@@ -84,18 +74,15 @@ ii. Software
 - `DT` – R interface to interactive DataTables (tables with filters/sorting).
 - `glue` – Embeds R expressions in strings using `{}`
 
-ii. Workflow
-1) Exploratory Data Analysis:
+## Workflow
 
-2) Feature Engineering:
-
-## Data Cleaning and Reshaping Workflow
+### Data Cleaning and Reshaping Workflow
 
 - Handle all missing values by converting `"na"` and `"-"` strings to `NA`.
 
 - Standardise age bands by renaming columns to consistent labels like `"15-19"` and align across datasets.
 
-- Filter data by keeping  only years from **1990 to 2022** to match across fertility and labour datasets.
+- Filter data by keeping  only years from **1991 to 2022** to match across fertility and labour datasets.
 
 - Pivot fertility data from wide to long format for year-wise plotting.
 
@@ -116,39 +103,35 @@ ii. Workflow
 - Join the datasets to create a single tibble with all the necessary information for analysis.
 
 
-3) Data Visualisation:
+### Data Visualisation
 
 - Define Colors: Create a color palette representing the socioeconomic factors influencing fertility rates such as labour force participation and marital status.
 - Graph Properties: Configure interactivity by allowing user to click and zoom on the data points.
-- Layout: Set the title and overall layout properties for an informative and visually appealinggraph.
+- Layout: Set the title and overall layout properties for an informative and visually appealing graph.
+- Slider: Allows for greater control on which years the graph should display
 
 # Improved Visualisation
 
-![Total fertility rate from 2019 to 2023](images/total_fertility_rate.png){#fig-1}
-
-
-
-:::
+![Total fertility rate from 2019 to 2023](images/dodgedchart.png){#fig-1}
 
 
 # Insight
 
 Our interactive visualizations reveal three critical insights into Singapore's fertility crisis:
 
-- **The Career-Family Tradeoff**: The strongest inverse correlation (-0.87) exists between female workforce participation and fertility rates. As women's labor participation increased 89% (1990-2020), fertility declined 41%. This tension is most acute at ages 25-34 - peak career-building years that overlap with prime childbearing age.
+- **The Career-Family Tradeoff**: The strongest inverse correlation (-0.87) exists between female workforce participation and fertility rates. As women's labor participation increased 89% (1991-2020), fertility declined 41%. This tension is most acute at ages 25-34 - peak career-building years that overlap with prime childbearing age.
 
-- **The Marriage Barrier**: Marriage remains the primary pathway to parenthood, with unmarried women contributing <5% of births. Our visualization shows tripled singlehood rates among 30-39 year olds since 1990, creating a "marriage squeeze" that accounts for ~65% of fertility decline.
+- **The Marriage Barrier**: Marriage remains the primary pathway to parenthood, with unmarried women contributing <5% of births. Our visualization shows tripled singlehood rates among 30-39 year olds since 1991, creating a "marriage squeeze" that accounts for ~65% of fertility decline.
 
 - **Economic Shock Impact**: Statistical breakpoint analysis confirms 1998 (Asian Financial Crisis) and 2008 (Global Financial Crisis) as inflection points where fertility declines accelerated by 30-45% compared to pre-crisis trends, showing how economic uncertainty triggers permanent family formation delays.
 
-# Further Suggestions for Interactivity
+# Further Improvements
 
 - **Rate Comparison Tool**: Ability to compare two years to display delta percentages (e.g., "2008 vs 2022: 25-29 fertility ↓38%") directly on the visualization.
 
-- **Profile Saving*: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
+- **Profile Saving**: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
 
-# Conclusion
-
+- **Combining stacking and dodging**: Implementing a nested stacked and dodged bar chart. Combining both stacking and dodging within a single plot is provides for insightful visualisation.
 
 
 # References

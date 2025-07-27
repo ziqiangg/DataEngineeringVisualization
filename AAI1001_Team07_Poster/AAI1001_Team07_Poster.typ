@@ -357,7 +357,6 @@
   // Display the poster's contents.
   body
 }
-#import "@preview/fontawesome:0.5.0": *
 
 // Typst custom formats typically consist of a 'typst-template.typ' (which is
 // the source code for a typst template) and a 'typst-show.typ' which calls the
@@ -405,7 +404,7 @@
   // See ./examples/example_2_column_18_24.typ for an example.
 
   // Any keywords or index terms that you want to highlight at the beginning.
-   keywords: ("AAA", "BBB", "CCC"), 
+  
 
   // Number of columns in the poster.
   
@@ -438,32 +437,6 @@
 <introduction>
 Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses #strong[three decades of fertility and labour force data] to identify patterns and relationships that visualisations from the source neglects. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from different websites.
 
-#block[
-#callout(
-body: 
-[
-Understanding the underlying #strong[socioeconomic factors] is crucial for policy formulation and national demographic sustainability.
-
-]
-, 
-title: 
-[
-Research Focus
-]
-, 
-background_color: 
-rgb("#dae6fb")
-, 
-icon_color: 
-rgb("#0758E5")
-, 
-icon: 
-fa-info()
-, 
-body_background_color: 
-white
-)
-]
 = Original Visualisation
 <original-visualisation>
 #figure([
@@ -493,7 +466,7 @@ supplement: "Figure",
 <suggested-improvements>
 + #strong[Inlcude data validation];: Add comprehensive data validation along with outlier analysis. This aims to ensure the accuracy and reliability of the data presented.
 
-+ #strong[Extended analysis];: Increase the range of the data to 1990-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
++ #strong[Extended analysis];: Increase the range of the data to 1991-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
 
 + #strong[Integrate socioeconomic factors];: Integrate socioeconomic factors such as labour force participation and marital status. This will provide a more holistic view of the factors influencing fertility rates. This allows for better policy formulation and understanding of the demographic trends.
 
@@ -501,25 +474,12 @@ supplement: "Figure",
 
 = Implementation
 <implementation>
-#block[
-#set enum(numbering: "i.", start: 1)
-+ Data Sources
-]
+== Data Sources
+<data-sources>
+The datasets used here are from SingStat and data.gov.sg. The data is in the CSV format. They contain information abour fertility rates, labour force participation and marital status in Singapore.
 
-#table(
-  columns: (19.85%, 9.56%, 13.24%, 38.97%, 18.38%),
-  align: (auto,auto,auto,auto,auto,),
-  table.header([Dataset], [Source], [Time Period], [Variables], [Records],),
-  table.hline(),
-  [Fertility Rates], [SingStat], [1960-2024], [Age-specific fertility rates, Total fertility rate], [17 variables wide format],
-  [Labour Force (Working)], [data.gov.sg], [1991-2022], [Female labour force by age & marital status], [5 columns long format],
-  [Labour Force (Not working)], [data.gov.sg], [1991-2022], [Females outside labour force by age & marital status], [5 columns long format],
-)
-#block[
-#set enum(numbering: "i.", start: 2)
-+ Software
-]
-
+== Software
+<software>
 - `crosstalk` -- Enables interactivity between HTML widgets
 - `tidyverse` -- Loads core tidy data science packages like `ggplot2`, `dplyr` and `tidyr`
 - `viridis` -- Provides colourblind-friendly color palettes for plots
@@ -541,25 +501,15 @@ supplement: "Figure",
 - `DT` -- R interface to interactive DataTables (tables with filters/sorting).
 - `glue` -- Embeds R expressions in strings using `{}`
 
-#block[
-#set enum(numbering: "i.", start: 2)
-+ Workflow
-]
-
-#block[
-#set enum(numbering: "1)", start: 1)
-+ Exploratory Data Analysis:
-
-+ Feature Engineering:
-]
-
-== Data Cleaning and Reshaping Workflow
+== Workflow
+<workflow>
+=== Data Cleaning and Reshaping Workflow
 <data-cleaning-and-reshaping-workflow>
 - Handle all missing values by converting `"na"` and `"-"` strings to `NA`.
 
 - Standardise age bands by renaming columns to consistent labels like `"15-19"` and align across datasets.
 
-- Filter data by keeping only years from #strong[1990 to 2022] to match across fertility and labour datasets.
+- Filter data by keeping only years from #strong[1991 to 2022] to match across fertility and labour datasets.
 
 - Pivot fertility data from wide to long format for year-wise plotting.
 
@@ -579,19 +529,17 @@ supplement: "Figure",
 
 - Join the datasets to create a single tibble with all the necessary information for analysis.
 
-#block[
-#set enum(numbering: "1)", start: 3)
-+ Data Visualisation:
-]
-
+=== Data Visualisation
+<data-visualisation>
 - Define Colors: Create a color palette representing the socioeconomic factors influencing fertility rates such as labour force participation and marital status.
 - Graph Properties: Configure interactivity by allowing user to click and zoom on the data points.
-- Layout: Set the title and overall layout properties for an informative and visually appealinggraph.
+- Layout: Set the title and overall layout properties for an informative and visually appealing graph.
+- Slider: Allows for greater control on which years the graph should display
 
 = Improved Visualisation
 <improved-visualisation>
 #figure([
-#box(image("images/total_fertility_rate.png"))
+#box(image("images/dodgedchart.png"))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -603,26 +551,24 @@ supplement: "Figure",
 <fig-1>
 
 
-:::
-
 = Insight
 <insight>
 Our interactive visualizations reveal three critical insights into Singapore's fertility crisis:
 
-- #strong[The Career-Family Tradeoff];: The strongest inverse correlation (-0.87) exists between female workforce participation and fertility rates. As women's labor participation increased 89% (1990-2020), fertility declined 41%. This tension is most acute at ages 25-34 - peak career-building years that overlap with prime childbearing age.
+- #strong[The Career-Family Tradeoff];: The strongest inverse correlation (-0.87) exists between female workforce participation and fertility rates. As women's labor participation increased 89% (1991-2020), fertility declined 41%. This tension is most acute at ages 25-34 - peak career-building years that overlap with prime childbearing age.
 
-- #strong[The Marriage Barrier];: Marriage remains the primary pathway to parenthood, with unmarried women contributing \<5% of births. Our visualization shows tripled singlehood rates among 30-39 year olds since 1990, creating a "marriage squeeze" that accounts for \~65% of fertility decline.
+- #strong[The Marriage Barrier];: Marriage remains the primary pathway to parenthood, with unmarried women contributing \<5% of births. Our visualization shows tripled singlehood rates among 30-39 year olds since 1991, creating a "marriage squeeze" that accounts for \~65% of fertility decline.
 
 - #strong[Economic Shock Impact];: Statistical breakpoint analysis confirms 1998 (Asian Financial Crisis) and 2008 (Global Financial Crisis) as inflection points where fertility declines accelerated by 30-45% compared to pre-crisis trends, showing how economic uncertainty triggers permanent family formation delays.
 
-= Further Suggestions for Interactivity
-<further-suggestions-for-interactivity>
+= Further Improvements
+<further-improvements>
 - #strong[Rate Comparison Tool];: Ability to compare two years to display delta percentages (e.g., "2008 vs 2022: 25-29 fertility ↓38%") directly on the visualization.
 
-- \*\*Profile Saving\*: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
+- #strong[Profile Saving];: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
 
-= Conclusion
-<conclusion>
+- #strong[Combining stacking and dodging];: Implementing a nested stacked and dodged bar chart. Combining both stacking and dodging within a single plot is provides for insightful visualisation.
+
 = References
 <references>
 

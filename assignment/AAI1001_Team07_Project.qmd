@@ -28,38 +28,28 @@ csl: https://raw.githubusercontent.com/citation-style-language/styles/master/apa
 
 ```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
 # Load necessary libraries (things that are def needed)
-library(crosstalk)
-library(tidyverse) # for data manipulation and visualization
-library(viridis) # for color scales
-library(ggpp) # for position_dodgenudge 
-library(ggrepel) # for text repelling
-library(RColorBrewer) # color palettes specifically tailored for data visualization
-library(crosstalk)
-library(htmltools)
-library(dplyr)
-library(knitr)
-library(tools) # 
-library(ggiraph)
-library(ggplot2) # for plotting
-library(plotly) # for interactive plots
-library(janitor) # for cleaning 
-library(gt)
-library(stringr)
-library(scales)
-library(forcats)
-library(DT) #test
-library(glue) # for cleaner HTML tool tips
-library(patchwork)
-library(purrr)
-# may not be needed/not used
-# library(directlabels) # for categorical text labeling
-# library(ggforce) # for enclosing shapes
-
-#to be verified USE gt package not kable
-library(kableExtra)
-library(corrplot)
-library(broom)
-
+library(crosstalk)      # Enables linked brushing and filtering between htmlwidgets
+library(tidyverse)      # Core packages for data science: dplyr, ggplot2, tidyr, etc.
+library(viridis)        # Provides perceptually uniform color scales for plots
+library(ggpp)           # Extensions for ggplot2, e.g., nudging geoms
+library(RColorBrewer)   # Offers appealing color palettes for data visualization
+library(htmltools)      # Tools for generating HTML content from R
+library(dplyr)          # Grammar of data manipulation for R (part of tidyverse)
+library(knitr)          # Dynamic report generation and document weaving
+library(tools)          # Tools for package development and file handling (e.g., toTitleCase)
+library(ggiraph)        # Creates interactive ggplot2 graphics
+library(ggplot2)        # Grammar of graphics plotting system (part of tidyverse)
+library(plotly)         # Interactive web graphics via the plotly.js library
+library(janitor)        # Simple tools for data cleaning and examination
+library(gt)             # Generates presentation-ready display tables
+library(stringr)        # Simple, consistent wrappers for common string operations
+library(scales)         # Scaling functions for visualization, e.g., percent, comma
+library(DT)             # Interface to the DataTables library for interactive HTML tables
+library(patchwork)      # Combines separate ggplot2 plots into one
+library(purrr)          # Functional programming tools and list mapping
+library(zoo)            # S3 Infrastructure for Regular and Irregular Time Series
+library(strucchange)    # Methods for testing for structural changes in linear regression models
+library(broom)          # Tidies statistical models by converting them to data frames
 
 # Set global options
 options(scipen = 999)
@@ -78,7 +68,7 @@ Singapore's total fertility rate has plummeted to historic lows, dropping below 
 
 **Key Findings:**
 
--   Fertility rate declined by 41% from 1990 to 2020
+-   Fertility rate declined by 41% from 1991 to 2020
 
 -   Female labour force participation increased by 89% over the same period
 
@@ -139,7 +129,7 @@ analysis_df <- data.frame(
   ),
   Our_Improvements = c(
     "Comprehensive data validation & outlier analysis",
-    "Extended analysis: 1990-2022 (32 years)",
+    "Extended analysis: 1991-2022 (31 years)",
     "Integrated labour force & marital status data",
     "Fully interactive dashboard",
     "Age-specific fertility rates by group",
@@ -315,7 +305,7 @@ fertility_clean <- fertility |>
       TRUE ~ "per thousand females"
     )
   ) |>
-  filter(year >= 1990 & year <= 2020) |>
+  filter(year >= 1991 & year <= 2020) |>
   select(year, age_band, fertility_rate = value, uom)
 
 # labour force data cleaning
@@ -352,7 +342,6 @@ not_working_all <- create_totals(not_working_clean, "outside_labour_force")
 work_clean <- bind_rows(work_clean, work_all)
 not_working_clean <- bind_rows(not_working_clean, not_working_all)
 
-cat("✓ Data cleaning completed successfully\n")
 ```
 
 ------------------------------------------------------------------------
@@ -599,7 +588,7 @@ cat("Joined data shape:", dim(fertility_labour_joined), "\n")
 
 ### Transform to Long Format
 
-Conversion of `labour_force` and `outside_labour_force` columns to have a single column dictating labour status. Years that do not have corresponding labour force data (1995, 2000, 2005) are filtered out as noted in our disclaimer.
+Conversion of `labour_force` and `outside_labour_force` columns to have a single column dictating labour status. Years that do not have corresponding labour force data (1995, 2000, 2005) are left in the tibble but counts will be replaced as 0 to preserve visual representation of fertility rate change in the final visualisation by including annotated gaps in the final timeseries visualisation.
 
 ```{r transform-long}
 #| echo: true
@@ -622,7 +611,7 @@ final_dataset <- fertility_labour_joined |>
 
 ### Data Quality Validation
 
-Evaluate the `final_dataset` for total number of records, unique values in each column, presence of missing values ("NA")
+Evaluate the `final_dataset` for total number of records, unique values in each column, presence of missing values "NA" (which should only come from marital_status column of 1995, 2000 and 2005 years).
 
 ```{r validation}
 #| echo: true
@@ -649,7 +638,7 @@ if ("year" %in% names(final_dataset)) {
     "None"
   }
   footer_note <- paste0(
-    "Year range: ", yr_min + 1, "–", yr_max,
+    "Year range: ", yr_min, "–", yr_max,
     " | Missing years: ", "1995, 2000 & 2005"
   )
 } else {
@@ -680,7 +669,7 @@ gt_tbl
 ```
 
 ### Create Aggregated Totals for Analysis
-
+Calculate the total count (e.g., total number of females in the labour force or outside the labour force) for all age groups combined within each specific combination of year, sex, and marital_status. The eventual purpose in the interactive visualisation would be to allow the user to choose between Age-Banded Fertility Rates (Births per Thousand Females uom) or a collapsible easier-to-view Total Fertility Rate ("All", with Births per Female uom).
 ```{r create-totals}
 #| echo: true
 #| eval: true
@@ -704,7 +693,6 @@ not_working_all <- create_totals(not_working_clean, "outside_labour_force")
 work_complete <- bind_rows(work_clean, work_all)
 not_working_complete <- bind_rows(not_working_clean, not_working_all)
 
-cat("✓ Created aggregated totals for comprehensive analysis\n")
 cat("Work data with totals shape:", dim(work_complete), "\n")
 cat("Not working data with totals shape:", dim(not_working_complete), "\n")
 ```
@@ -713,7 +701,7 @@ cat("Not working data with totals shape:", dim(not_working_complete), "\n")
 
 The final integrated dataset successfully combines:
 
--   **Fertility rates** from SingStat (1990-2022)
+-   **Fertility rates** from SingStat (1991-2022)
 -   **Female labour force participation** from data.gov.sg
 -   **Demographic breakdowns** by age group and marital status in time series
 
@@ -745,113 +733,18 @@ datatable(
 
 ------------------------------------------------------------------------
 
-# Statistical Analysis
+# Visualisation
+To properly deal with visual clutter of various dimensions, we will test 3 methods of time series visualisation to handle extensive female population data & intensive fertility rate data :
 
-```{r correlation-analysis, echo=TRUE}
+- Stacked bar chart for population data with overlaying fertility rate lines
 
-#| echo: true
-#| eval: true
-#| label: tbl-6
-#| tbl-cap: "Correlation Matrix"
+- Dodged bar chart for population data with overlaying fertility rate lines
 
-# Calculate correlations between key variables
-correlation_data <- final_dataset |>
-  filter(age_band == "All") |>
-  group_by(year, labour_status) |>
-  summarise(
-    fertility_rate = first(fertility_rate),
-    total_count     = sum(count, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  pivot_wider(
-    names_from  = labour_status,
-    values_from = total_count
-  ) |>
-  mutate(
-    labour_participation_rate = labour_force / (labour_force + outside_labour_force),
-    total_female_population   = labour_force + outside_labour_force
-  )
+- Faceted dashboard for clear analysis of individual dimensions
 
-# Calculate correlation matrix
-cor_matrix <- correlation_data |>
-  select(fertility_rate,
-         labour_participation_rate,
-         labour_force,
-         outside_labour_force) |>
-  cor(use = "complete.obs") |>
-  round(3)
+The combination of these 3 plots would give the user a comprehensive view of the socioeconomic realities of Singapore's fertility decline.
 
-# Turn it into a tibble for gt
-cor_tbl <- as.data.frame(cor_matrix) |>
-  rownames_to_column(var = "Variable") |>
-  as_tibble()
-
-# Render with gt
-cor_tbl |>
-  gt(rowname_col = "Variable") |>
-  tab_header(
-    title = md("**Correlation Matrix: Key Variables**")
-  ) |>
-  fmt_number(
-    columns = everything(),
-    decimals = 3
-  )
-
-# Key correlation insights
-cat("• Fertility Rate vs Labour Participation Rate:",
-    cor_matrix["fertility_rate", "labour_participation_rate"], "\n")
-cat("• Fertility Rate vs Labour Force:",
-    cor_matrix["fertility_rate", "labour_force"], "\n")
-cat("• Fertility Rate vs Outside Labour Force:",
-    cor_matrix["fertility_rate", "outside_labour_force"], "\n")
-
-```
-
-- There is a **strong negative correlation** between *fertility rate* and both *female labour participation* and *overall female labour force size*. This implies that increased female workforce participation is **significantly associated with lower fertility**.
-
-- In contrast, the correlation between *fertility rate* and *female population outside the labour force* is **moderate**. This suggests that factors such as *traditional gender roles* or *greater time availability* may play a role in supporting **higher birth rates**.
-
-
-
-**Trend Analysis**
-
-```{r trend-analysis, echo=TRUE}
-# Calculate year-over-year changes
-trend_analysis <- final_dataset |>
-  filter(age_band == "All") |>
-  group_by(year, labour_status) |>
-  summarise(
-    fertility_rate = first(fertility_rate),
-    total_count = sum(count, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  arrange(year) |>
-  mutate(
-    fertility_change = fertility_rate - lag(fertility_rate),
-    fertility_pct_change = (fertility_rate - lag(fertility_rate)) / lag(fertility_rate) * 100
-  )
-
-# Summary statistics
-summary_stats <- trend_analysis |>
-  filter(!is.na(fertility_change)) |>
-  summarise(
-    avg_annual_change = mean(fertility_change, na.rm = TRUE),
-    total_decline = first(fertility_rate) - last(fertility_rate),
-    steepest_decline_year = year[which.min(fertility_change)],
-    steepest_decline_value = min(fertility_change, na.rm = TRUE)
-  )
-
-cat("• Average annual fertility decline:", round(summary_stats$avg_annual_change, 4), "per year\n")
-cat("• Total fertility decline (1990-2020):", round(summary_stats$total_decline, 2), "\n")
-cat("• Steepest decline occurred in:", summary_stats$steepest_decline_year, "\n")
-cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3), "\n")
-```
-- The year **1998** emerges as a **key inflection point**, likely influenced by the *Asian Financial Crisis*. The crisis introduced economic uncertainty, which may have **delayed family planning decisions**.
-
-- Overall, the data show a **consistent downward trend in fertility**, reflecting **structural changes** in: *Social norms*, *Career aspirations* & *Marriage and childbirth timing*
-
-# visualisation
-stacked version where it does not split by marital status, hovering on bar segments does not show age band
+## Stacked
 ```{r}
 
 # Load and clean data
@@ -982,7 +875,7 @@ combined_legend <- paste0(
 # Final UI
 tagList(
   div(style = "margin-bottom:20px;",
-      h3("Interactive Fertility & Labour Dashboard"),
+      h3("Stacked Interactive Fertility & Labour Plot"),
       p("Use filters to explore female labour force counts and age-banded fertility rates.")
   ),
   div(style = "display: flex; gap: 15px; margin-bottom: 20px;",
@@ -996,7 +889,8 @@ tagList(
 
 ```
 
-this is dodged version where it further splits by marital status, shows age bands when hovering over bar segments
+
+## Dodged
 ```{r}
 # Load and clean data
 filtered_dataset <- final_dataset |>
@@ -1179,7 +1073,7 @@ combined_legend <- sprintf('
 tagList(
   div(
     style = "margin-bottom:20px;",
-    h3("Interactive Fertility & Labour Dashboard"),
+    h3("Dodged Interactive Fertility & Labour Plot"),
     p("Use filters to explore female labour force counts and age-banded fertility rates.")
   ),
   div(
@@ -1206,11 +1100,11 @@ tagList(
 
 **Summary of Improvements to weaknesses**
 
-- **Extended Analysis**: Compared to the 2019–2023 analysis of the original, our visualisation expands the scope to **fertility rates from 1990 to 2022**.
+- **Extended Analysis**: Compared to the 2019–2023 analysis of the original, our visualisation expands the scope to **fertility rates from 1991 to 2022**.
 
-- **Socio-Economic Factors**: The original visualisation lacked explanatory power for Singapore’s fertility decline. Our dashboard introduces dimensions like **population**, **labour status**, and **marital status** to reveal potential **causal relationships** and enrich policy relevance.
+- **Socio-Economic Factors**: The original visualisation lacked explanatory power for Singapore’s fertility decline. Our dashboard introduces dimensions like **female population** allowing users to evaluate female **labour status**, and **marital status** to reveal potential **causal relationships** and enrich policy relevance.
 
-- **Age-Banded Fertility: Instead of a single flat fertility rate, we analysed **age-specific fertility rates (ASFR)** for **age bands 15–49 in 5-year increments**. This highlights how fertility behaviour shifts across cohorts and identifies **which age groups contribute most** to the decline.
+- **Age-Banded Fertility**: Instead of a single flat fertility rate, we analyse age-banded fertility rates  for **age bands 15–49 in 5-year increments**. This highlights how fertility behaviour shifts across cohorts and identifies *which age groups contribute most* to the decline.
 
 **Interactive Dashboard**
 
@@ -1219,24 +1113,26 @@ tagList(
   - `Age-band`
   - `Marital status`
   - `Labour status`
-- Built using the `Plotly` library, enabling:
+- Built using the `ggiraph` library, enabling:
   - Zooming
   - Tooltip inspection
-  - Dynamic filtering
+  - Lasso selection or on-click comparison
 
 ---
 
+## Faceted
+
 ```{r, echo=TRUE, fig.width=12, fig.height=8}
-# ──────────────────────────────────────────────────────────────────────────────
-# 1. Compute agg_counts
-# ──────────────────────────────────────────────────────────────────────────────
+
+#Compute agg_counts
+
 agg_counts <- final_dataset |>
   group_by(year, marital_status, labour_status) |>
   summarise(count = sum(count, na.rm = TRUE), .groups="drop")
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 2. Prepare bar tooltips and IDs
-# ──────────────────────────────────────────────────────────────────────────────
+
+#Prepare bar tooltips and IDs
+
 tooltip_df <- agg_counts |>
   pivot_wider(
     names_from  = labour_status,
@@ -1267,9 +1163,8 @@ tooltip_df <- agg_counts |>
     )
   )
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 3. Compute fertility_ab & give each point *all* bar_ids for its year
-# ──────────────────────────────────────────────────────────────────────────────
+
+# Compute fertility_ab & give each point 'all' bar_ids for its year
 # Get all marital_status values
 all_status <- unique(agg_counts$marital_status)
 
@@ -1284,7 +1179,7 @@ fertility_ab <- final_dataset |>
       "Age Band: ", age_band, "<br/>",
       "Fertility Rate: ", round(fertility_rate,2)
     ),
-    # Build a space-separated string of *all* status‐specific IDs for that year
+    # Build a space-separated string of 'all' status‐specific IDs for that year
     data_id = map_chr(year, ~ paste(paste(.x, all_status), collapse=" "))
   ) |>
   ungroup()
@@ -1292,9 +1187,8 @@ fertility_ab <- final_dataset |>
 # figure out scaling
 scale_factor <- max(agg_counts$count) / max(fertility_ab$fertility_rate)
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 4. Build bar_plot
-# ──────────────────────────────────────────────────────────────────────────────
+# Build bar_plot
+
 bar_plot <- ggplot(tooltip_df) +
   geom_col_interactive(
     aes(
@@ -1322,9 +1216,9 @@ bar_plot <- ggplot(tooltip_df) +
 
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 5. Build line_plot
-# ──────────────────────────────────────────────────────────────────────────────
+
+#Build line_plot
+
 line_plot <- ggplot(fertility_ab) +
   geom_line_interactive(
     aes(
@@ -1352,9 +1246,8 @@ line_plot <- ggplot(fertility_ab) +
   theme(legend.position="bottom",
         strip.text=element_text(face="bold", size=12))
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 6. Combine & render
-# ──────────────────────────────────────────────────────────────────────────────
+#Combine & render
+
 combined_plot <- bar_plot + line_plot + plot_layout(ncol=1, heights=c(2,1))
 
 gir <- girafe(
@@ -1377,27 +1270,124 @@ gir
 
 **Summary of Improvements:**
 
-
-
-
-- Streamlined data prep: Combined mutate() calls and used glue() for cleaner, HTML‐enhanced tooltips.
-
-- Cache chunk: Added cache=TRUE to avoid re‐computing on every render.
-
 - Color accessibility: Switched to Viridis palettes (scale_fill_viridis_d, scale_colour_viridis_d) for colorblind‐friendly visuals.
 
 - Unified selection IDs: Used a single data_id = paste0("year_", year) for both bars and lines—clicking a year now highlights all elements for that year.
 
+- Faceting relevant dimensions (female population, labour status, fertility rates and year) to provide user dedicated inspection if desired
+
 **Improved interactivity:**
 
-- Changed to single‐click selection (opts_selection(type="single")).
+- Changed to single‐click selection (opts_selection(type="single")), where user can select multiple data points (bars or points) to inspect. Alternatively they may use the lasso select tooptip for area selection.
 
-- Added custom tooltip styling via opts_tooltip().
+- Added custom tooltip styling, zooming, panning or hovering effect and information display (female population in LF and out LF as well as fertility rates).
 
 - Aesthetic tweaks: Rotated x‐axis labels for readability, bumped strip text to bold, and positioned legend at the bottom.
 
 - Performance optimization: Computed the scaling factor once outside of the plot call.
 
+# Statistical Analysis
+
+```{r correlation-analysis, echo=TRUE}
+#| eval: true
+#| label: tbl-6 
+#| tbl-cap: "Correlation Matrix"
+
+# Calculate correlations between key variables
+correlation_data <- final_dataset |>
+  filter(age_band == "All") |>
+  group_by(year, labour_status) |>
+  summarise(
+    fertility_rate = first(fertility_rate),
+    total_count     = sum(count, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_wider(
+    names_from  = labour_status,
+    values_from = total_count
+  ) |>
+  mutate(
+    labour_participation_rate = labour_force / (labour_force + outside_labour_force),
+    total_female_population   = labour_force + outside_labour_force
+  )
+
+# Calculate correlation matrix
+cor_matrix <- correlation_data |>
+  select(fertility_rate,
+         labour_participation_rate,
+         labour_force,
+         outside_labour_force) |>
+  cor(use = "complete.obs") |>
+  round(3)
+
+# Turn it into a tibble for gt
+cor_tbl <- as.data.frame(cor_matrix) |>
+  rownames_to_column(var = "Variable") |>
+  as_tibble()
+
+# Render with gt
+cor_tbl |>
+  gt(rowname_col = "Variable") |>
+  tab_header(
+    title = md("**Correlation Matrix: Key Variables**")
+  ) |>
+  fmt_number(
+    columns = everything(),
+    decimals = 3
+  )
+
+# Key correlation insights
+cat("• Fertility Rate vs Labour Participation Rate:",
+    cor_matrix["fertility_rate", "labour_participation_rate"], "\n")
+cat("• Fertility Rate vs Labour Force:",
+    cor_matrix["fertility_rate", "labour_force"], "\n")
+cat("• Fertility Rate vs Outside Labour Force:",
+    cor_matrix["fertility_rate", "outside_labour_force"], "\n")
+
+```
+
+- There is a **strong negative correlation** between *fertility rate* and both *female labour participation* and *overall female labour force size*. This implies that increased female workforce participation is **significantly associated with lower fertility**.
+
+- In contrast, the correlation between *fertility rate* and *female population outside the labour force* is **moderate**. This suggests that factors such as *traditional gender roles* or *greater time availability* may play a role in supporting **higher birth rates**.
+
+
+
+**Trend Analysis**
+
+```{r trend-analysis, echo=TRUE}
+# Calculate year-over-year changes
+trend_analysis <- final_dataset |>
+  filter(age_band == "All") |>
+  group_by(year, labour_status) |>
+  summarise(
+    fertility_rate = first(fertility_rate),
+    total_count = sum(count, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(year) |>
+  mutate(
+    fertility_change = fertility_rate - lag(fertility_rate),
+    fertility_pct_change = (fertility_rate - lag(fertility_rate)) / lag(fertility_rate) * 100
+  )
+
+# Summary statistics
+summary_stats <- trend_analysis |>
+  filter(!is.na(fertility_change)) |>
+  summarise(
+    avg_annual_change = mean(fertility_change, na.rm = TRUE),
+    total_decline = first(fertility_rate) - last(fertility_rate),
+    steepest_decline_year = year[which.min(fertility_change)],
+    steepest_decline_value = min(fertility_change, na.rm = TRUE)
+  )
+
+cat("• Average annual fertility decline:", round(summary_stats$avg_annual_change, 4), "per year\n")
+cat("• Total fertility decline (1991-2020):", round(summary_stats$total_decline, 2), "\n")
+cat("• Steepest decline occurred in:", summary_stats$steepest_decline_year, "\n")
+cat("• Steepest decline value:", round(summary_stats$steepest_decline_value, 3), "\n")
+```
+- The year **1998** emerges as a **key inflection point**, likely influenced by the *Asian Financial Crisis*. The crisis introduced economic uncertainty, which may have **delayed family planning decisions**.
+
+- Overall, the data show a **consistent downward trend in fertility**, reflecting **structural changes** in: *Social norms*, *Career aspirations* & *Marriage and childbirth timing*
 
 # Key Findings & Insights
 
@@ -1418,7 +1408,10 @@ The integrated dataset reveals four headline insights:
 - A Chow test around the Asian Financial Crisis confirms a statistically significant change in the slope of TFR (p < 0.01).
 
 ```{r summary-stats, echo=FALSE, message=FALSE}
-# ── 1. Recreate LFPR at the YEAR level ────────────────────────────────────────
+#| label: tbl-7
+#| tbl-cap: "Fertility & Female Labour Participation Rates"
+
+# Recreate LFPR at the YEAR level
 year_tbl <- final_dataset |>                       # uses long data
   filter(age_band == "All") |>                     # total fertility only
   group_by(year) |>                              
@@ -1430,7 +1423,7 @@ year_tbl <- final_dataset |>                       # uses long data
     .groups = "drop"
   )
 
-# ── 2. Tag decades & summarise ────────────────────────────────────────────────
+# Tag decades & summarise
 decade_tbl <- year_tbl |>
   mutate(decade = cut(year,
                       breaks = c(1990, 2000, 2010, 2020, 2023),
@@ -1444,7 +1437,7 @@ decade_tbl <- year_tbl |>
     .groups   = "drop"
   )
 
-# ── 3. Display ────────────────────────────────────────────────────────────────
+#Display
 gt(decade_tbl) |>
   tab_header(title = md("**Fertility & LFPR by Decade**")) |>
   cols_label(
@@ -1458,7 +1451,7 @@ gt(decade_tbl) |>
 ### Insights from the table
 **Trends across decades**
 
-- **Steady fertility decline**: 1.66 ➜ 1.32 ➜ 1.20 ➜ 1.10. The 2020-22 figure is *barely half* of the replacement level (≈ 2.1).
+- **Steady fertility decline**: 1.64 ➜ 1.32 ➜ 1.20 ➜ 1.10. The 2020-22 figure is *barely half* of the replacement level (≈ 2.1).
 
 - **Rising female participation**: 0.588 ➜ 0.634 ➜ 0.699 ➜ 0.735. Roughly *15 percentage-points* more women are in paid work than in the 1990s.
 
@@ -1477,16 +1470,24 @@ gt(decade_tbl) |>
 Overall, the table compresses thirty years of data into a single glance: as Singaporean women joined the workforce in *ever-greater numbers*, **fertility fell** phase by phase and has now *stabilised at record lows*.
 
 ## Statistical Significance Testing
-```{r}
-# ── libraries ────────────────────────────────────────────────────────────────
-library(tidyverse)
-library(broom)
-suppressPackageStartupMessages({
-  library(zoo)          # pulled in by strucchange
-  library(strucchange)  # Chow test
-})
+**Pearson r Test**:
+Purpose: Measures the strength and direction of the linear relationship between two continuous variables. In this case, it quantifies how closely the female labour-force-participation rate (LFPR) and the total fertility rate (TFR) move together in a straight line.
 
-# ── 1. Build correlation_data (year-level) ───────────────────────────────────
+**LM Slope** (from TFR ~ LFPR):
+Purpose: Fits a simple linear regression model to estimate the quantitative impact (slope) of one variable (LFPR) on another (TFR). It tells you the expected change in TFR for a one-unit change in LFPR and assesses the statistical significance of this relationship.
+
+**Kruskal–Wallis Test**:
+Purpose: A non-parametric test used to determine if there are statistically significant differences in the distributions of a continuous variable (fertility rate) across three or more independent groups (age bands). 
+
+**Chow F** (1998 break):
+Purpose: Tests for a structural break in a regression model at a known point in time (1998). It checks whether the relationship between TFR and LFPR (the slope and/or intercept of the regression line) changed significantly before and after the Asian Crisis.
+
+p-value is a probability that measures the strength of evidence against a null hypothesis "no effect" obtained from the data. 
+```{r}
+#| label: tbl-8
+#| tbl-cap: "Statistical Significance Test Results"
+#| 
+# Build correlation_data (year-level)
 correlation_data <- final_dataset |>                  # uses long data
   filter(age_band == "All") |>                        # total fertility only
   group_by(year, labour_status) |>                    
@@ -1506,7 +1507,7 @@ correlation_data <- final_dataset |>                  # uses long data
   ) |> 
   arrange(year)
 
-# ── 2. Statistical tests ─────────────────────────────────────────────────────
+# Statistical tests
 ## Pearson correlation
 cor_test <- cor.test(
   correlation_data$fertility_rate,
@@ -1532,7 +1533,7 @@ chow <- sctest(
   data  = correlation_data
 )
 
-# ── 3. Assemble results for display ──────────────────────────────────────────
+# Assemble results for display 
 test_results <- tibble(
   Test          = c("Pearson r", "LM slope", "Kruskal–Wallis H", "Chow F"),
   Statistic     = c(
@@ -1555,10 +1556,7 @@ test_results <- tibble(
   )
 )
 
-# ── 4. Render table ──────────────────────────────────────────────────────────
-library(gt)
-gt(test_results) |> 
-  tab_header(title = md("**Statistical Significance Tests**"))
+gt(test_results)
 
 ```
 **Pearson r Test**
@@ -1589,7 +1587,7 @@ Overall, all four tests reinforce our groups storyline which is: **rising female
 # Team Contributions
 | Team Member | Tasks |
 | --- | --- |
-| Guo Zi Qiang Robin |  |
+| Guo Zi Qiang Robin | Data Engineering, references, creation of dodged & faceted visualisation |
 | Chew Tze Han |  |
 | Cheong Wai Hong Jared |  |
 | Akram | |

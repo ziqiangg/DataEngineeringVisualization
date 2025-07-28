@@ -1008,6 +1008,333 @@ tagList(
 
 ---
 
+## test
+trying to create total female population visualisation instead of by ageband, which is more clear for our presentation purposes. this is higher level and not so detailed as the finished dodged one. 
+**issues** this current total fertility line and points do not persist throughout all combinations of marital andlaboour status dropdowns, otherwise ok
+```{r}
+# Load and clean data
+filtered_dataset <- final_dataset |>
+  filter(age_band == "All") |>
+  mutate(
+    marital_status  = tools::toTitleCase(trimws(as.character(marital_status))),
+    labour_status   = tools::toTitleCase(trimws(as.character(labour_status))),
+    age_band        = tools::toTitleCase(trimws(as.character(age_band))),
+    count           = as.numeric(as.character(count)),
+    fertility_rate  = as.numeric(as.character(fertility_rate)),
+    uom             = "per female"  # Total fertility rates for "All" age band
+  )
+
+# SharedData for interactivity (filtering out 1995, 2000, and 2005 for the lines)
+shared_data <- SharedData$new(filtered_dataset, group = "full_filter")
+
+# Filter controls (only marital status and labour status dropdowns)
+filter_marital <- filter_select("filter_marital", "Marital Status:", shared_data, ~marital_status)
+filter_labour  <- filter_select("filter_labour", "Labour Status:", shared_data, ~labour_status)
+
+# Custom Colors for Marital Status
+marital_colors <- c(
+  "Single" = "#32CD32",  # Light Green
+  "Married" = "#1E90FF",  # Dodger Blue
+  "Widowed_divorced" = "#FF4500"  # Orange Red
+)
+
+# Scaling factor (used to adjust the scales of fertility rate and count to display on the same graph)
+scale_factor <- max(filtered_dataset$count, na.rm = TRUE) / max(filtered_dataset$fertility_rate, na.rm = TRUE)
+
+# Plot
+p <- ggplot() +
+  geom_col(
+    data = shared_data,
+    aes(
+      x = factor(year),
+      y = count,  # Use the original count column for female population
+      fill = marital_status,  # Segments by marital status
+      group = interaction(labour_status, marital_status),  # Ensure the bars are grouped by both labour and marital status
+      text = paste0(
+        "Year: ", year,
+        "<br>Marital Status: ", marital_status,
+        "<br>Labour Status: ", labour_status,
+        "<br>Female Population: ", comma(count)  # Use the original female population count
+      )
+    ),
+    position = position_dodge(width = 0.7),  # Keep the dodge position for bars
+    width = 0.6,
+    colour = "white",
+    size = 0.2,
+    alpha = 0.6  # Reduced alpha for better visibility of segments
+  ) +
+  # Fixed Color for Fertility Rate Line (excluding 1995, 2000, and 2005)
+  geom_line(
+    data = filtered_dataset |> filter(!year %in% c(1995, 2000, 2005)),  # Exclude these years for the line plot
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,  # Adjust the fertility rate to match the count scale
+      group = marital_status,
+      colour = "Fertility Rate"  # Set a fixed color for fertility rate line
+    ),
+    size = 0.8,  # Reduced line size for a more subtle appearance
+    alpha = 0.6  # Reduced alpha for the line
+  ) +
+  # Points for fertility rates (including gray points for 1995, 2000, and 2005)
+  geom_point(
+    data = filtered_dataset,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,  # Adjust the fertility rate to match the count scale
+      group = marital_status,
+      colour = ifelse(year %in% c(1995, 2000, 2005), "gray", "Fertility Rate"),  # Gray for 1995, 2000, 2005
+      text = paste0(
+        "Year: ", year,
+        "<br>Fertility Rate: ", round(fertility_rate, 2),
+        "<br>Unit: ", uom  # Added the unit of measurement (uom) to the hover tooltip
+      )
+    ),
+    size = 0.5,  # Reduced point size
+    alpha = 0.6  # Reduced point alpha for subtlety
+  ) +
+  scale_fill_manual(values = marital_colors) +  # Apply custom colors for marital status
+  scale_colour_manual(values = c("Fertility Rate" = "#FF6347", "gray" = "#808080")) +  # Set fixed color for fertility rate line/points (Tomato and Gray)
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = comma
+  ) +
+  labs(
+    title = "Fertility Rates vs Labour Participation",
+    subtitle = "Bars: Female Population Segmented by Marital Status and Labour Status; Points: Fertility Rates by Marital Status",
+    x = "Year",
+    caption = "Source: SingStat & data.gov.sg"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"  # No legend for now, as we've defined the colors manually
+  )
+
+# Plotly conversion (only points have tooltips)
+plotly_output <- ggplotly(p, tooltip = "text")  # Ensures the custom text in tooltips is used
+
+# Add vertical annotations for the years without data (1995, 2000, 2005)
+plotly_output <- plotly_output |> 
+  layout(
+    annotations = list(
+      list(
+        x = 5, y = 0, # for 1995 annotation
+        text = "No Data", 
+        showarrow = FALSE,
+        font = list(size = 12, color = "black", family = "Arial"),
+        textangle = 90,  # Rotate text vertically
+        xanchor = "center",
+        yanchor = "bottom"
+      ),
+      list(
+        x = 10, y = 0, # for 2000 annotation
+        text = "No Data", 
+        showarrow = FALSE,
+        font = list(size = 12, color = "black", family = "Arial"),
+        textangle = 90,  # Rotate text vertically
+        xanchor = "center",
+        yanchor = "bottom"
+      ),
+      list(
+        x = 15, y = 0, # for 2005 annotation
+        text = "No Data", 
+        showarrow = FALSE,
+        font = list(size = 12, color = "black", family = "Arial"),
+        textangle = 90,  # Rotate text vertically
+        xanchor = "center",
+        yanchor = "bottom"
+      )
+    )
+  )
+
+# Final UI Layout with Footnote
+tagList(
+  div(
+    style = "margin-bottom:20px;",
+    h3("Interactive Fertility & Labour Plot"),
+    p("Use filters to explore aggregated female population and fertility rates.")
+  ),
+  div(
+    style = "display: flex; gap: 15px; margin-bottom: 20px;",
+    filter_marital,
+    filter_labour
+  ),
+  plotly_output,
+  
+  # Footnote Section
+  div(
+    style = "margin-top: 20px; font-size: 12px; color: #555; text-align: center;",
+    p("Population data for 1995, 2000, and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years."),
+    p("Source: data.gov.sg & SingStat")
+  )
+)
+```
+
+persistent total fertility rate line, but the 1995, 2000 and 2005 points do not persist also they should not be connected with lines, should be like plot above
+```{r}
+# Load and clean data
+filtered_dataset <- final_dataset |>
+  filter(age_band == "All") |>
+  mutate(
+    marital_status  = tools::toTitleCase(trimws(as.character(marital_status))),
+    labour_status   = tools::toTitleCase(trimws(as.character(labour_status))),
+    age_band        = tools::toTitleCase(trimws(as.character(age_band))),
+    count           = as.numeric(as.character(count)),
+    fertility_rate  = as.numeric(as.character(fertility_rate)),
+    uom             = "per female"  # Total fertility rates for "All" age band
+  )
+
+# SharedData for interactivity (keeping all combinations of marital and labour status)
+shared_data <- SharedData$new(filtered_dataset, group = "full_filter")
+
+# Filter controls (marital status and labour status dropdowns)
+filter_marital <- filter_select("filter_marital", "Marital Status:", shared_data, ~marital_status)
+filter_labour  <- filter_select("filter_labour", "Labour Status:", shared_data, ~labour_status)
+
+# Custom Colors for Marital Status
+marital_colors <- c(
+  "Single" = "#32CD32",  # Light Green
+  "Married" = "#1E90FF",  # Dodger Blue
+  "Widowed_divorced" = "#FF4500"  # Orange Red
+)
+
+# Scaling factor (used to adjust the scales of fertility rate and count to display on the same graph)
+scale_factor <- max(filtered_dataset$count, na.rm = TRUE) / max(filtered_dataset$fertility_rate, na.rm = TRUE)
+
+# Plot
+p <- ggplot() +
+  geom_col(
+    data = shared_data,
+    aes(
+      x = factor(year),
+      y = count,  # Use the original count column for female population
+      fill = marital_status,  # Segments by marital status
+      group = interaction(labour_status, marital_status),  # Ensure the bars are grouped by both labour and marital status
+      text = paste0(
+        "Year: ", year,
+        "<br>Marital Status: ", marital_status,
+        "<br>Labour Status: ", labour_status,
+        "<br>Female Population: ", comma(count)  # Use the original female population count
+      )
+    ),
+    position = position_dodge(width = 0.7),  # Keep the dodge position for bars
+    width = 0.6,
+    colour = "white",
+    size = 0.2,
+    alpha = 0.6  # Reduced alpha for better visibility of segments
+  ) +
+  # Fertility Rate Line (across all dropdown selections)
+  geom_line(
+    data = shared_data,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,  # Adjust the fertility rate to match the count scale
+      group = marital_status,
+      colour = "Fertility Rate"  # Fixed color for fertility rate line
+    ),
+    size = 0.8,  # Reduced line size for a more subtle appearance
+    alpha = 0.6  # Reduced alpha for the line
+  ) +
+  # Points for fertility rates
+  geom_point(
+    data = shared_data,
+    aes(
+      x = as.factor(year),
+      y = fertility_rate * scale_factor,  # Adjust the fertility rate to match the count scale
+      group = marital_status,
+      colour = "Fertility Rate",
+      text = paste0(
+        "Year: ", year,
+        "<br>Fertility Rate: ", round(fertility_rate, 2),
+        "<br>Unit: ", uom  # Added the unit of measurement (uom) to the hover tooltip
+      )
+    ),
+    size = 0.5,  # Reduced point size
+    alpha = 0.6  # Reduced point alpha for subtlety
+  ) +
+  scale_fill_manual(values = marital_colors) +  # Apply custom colors for marital status
+  scale_colour_manual(values = c("Fertility Rate" = "#FF6347")) +  # Fixed color for fertility rate line/points
+  scale_y_continuous(
+    name = "Female Population (thousands)",
+    labels = comma
+  ) +
+  labs(
+    title = "Fertility Rates vs Labour Participation",
+    subtitle = "Bars: Female Population Segmented by Marital Status and Labour Status; Points: Fertility Rates by Marital Status",
+    x = "Year",
+    caption = "Source: SingStat & data.gov.sg"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"  # No legend for now, as we've defined the colors manually
+  )
+
+# Plotly conversion (only points have tooltips)
+plotly_output <- ggplotly(p, tooltip = "text")  # Ensures the custom text in tooltips is used
+
+# Add vertical annotations for the years without data (1995, 2000, 2005)
+plotly_output <- plotly_output |> 
+  layout(
+    annotations = list(
+      list(
+        x = 5, y = 0, # for 1995 annotation
+        text = "No Data", 
+        showarrow = FALSE,
+        font = list(size = 12, color = "black", family = "Arial"),
+        textangle = 90,  # Rotate text vertically
+        xanchor = "center",
+        yanchor = "bottom"
+      ),
+      list(
+        x = 10, y = 0, # for 2000 annotation
+        text = "No Data", 
+        showarrow = FALSE,
+        font = list(size = 12, color = "black", family = "Arial"),
+        textangle = 90,  # Rotate text vertically
+        xanchor = "center",
+        yanchor = "bottom"
+      ),
+      list(
+        x = 15, y = 0, # for 2005 annotation
+        text = "No Data", 
+        showarrow = FALSE,
+        font = list(size = 12, color = "black", family = "Arial"),
+        textangle = 90,  # Rotate text vertically
+        xanchor = "center",
+        yanchor = "bottom"
+      )
+    )
+  )
+
+# Final UI Layout with Footnote
+tagList(
+  div(
+    style = "margin-bottom:20px;",
+    h3("Interactive Fertility & Labour Plot"),
+    p("Use filters to explore aggregated female population and fertility rates.")
+  ),
+  div(
+    style = "display: flex; gap: 15px; margin-bottom: 20px;",
+    filter_marital,
+    filter_labour
+  ),
+  plotly_output,
+  
+  # Footnote Section
+  div(
+    style = "margin-top: 20px; font-size: 12px; color: #555; text-align: center;",
+    p("Population data for 1995, 2000, and 2005 are not available as the Comprehensive Labour Force Survey was not conducted in these years."),
+    p("Source: data.gov.sg & SingStat")
+  )
+)
+
+```
+
+
+
 ## Faceted
 
 **Interactive Dashboard**

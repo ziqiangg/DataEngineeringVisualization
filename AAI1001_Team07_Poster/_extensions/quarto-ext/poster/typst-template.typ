@@ -42,7 +42,7 @@
   num_columns: "3",
 
   // University logo's scale (in %).
-  univ_logo_scale: "100",
+  univ_logo_scale: "60",
 
   // University logo's column size (in in).
   univ_logo_column_size: "10",

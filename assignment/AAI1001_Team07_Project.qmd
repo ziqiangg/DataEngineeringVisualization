@@ -734,16 +734,18 @@ datatable(
 ------------------------------------------------------------------------
 
 # Visualisation
-To properly deal with visual clutter of various dimensions, we determined that the optimal way to visualise the extensive female population data (counts by age band, year, marital status and labour status and also aggregated totals) and the intensive fertility rates (age-banded fertility rates and total fertility rate) in time series would be to utilise 2 dedicated plots:
+To properly deal with visual clutter of various dimensions, we determined that the optimal way to visualise the extensive female population data (counts by age band, year, marital status and labour status and also aggregated totals) and the intensive fertility rates (age-banded fertility rates and total fertility rate) in time series would be to utilise 3 dedicated plots:
 
-- Dodged bar chart for age-banded population data (by age band, marital status, labour status & year) with overlaying age-banded fertility rate lines
+- Lower level dodged bar chart for age-banded population data (by age band, marital status, labour status & year) with overlaying age-banded fertility rate lines and points
 
-- Faceted dashboard for clear analysis of individual dimensions (clearly visualises total population data by labour status, marital status and year)
+- Higher level dodged bar chart for aggregated population data (by marital status, labour status & year) with overlaying Total Fertility Rate line and points
 
-The combination of these 2 plots would give the user a comprehensive view of the socioeconomic realities of Singapore's fertility decline.
+- Faceted dashboard for clear separate analysis of individual dimensions
+
+The combination of these 3 plots would give the user a comprehensive view of the socioeconomic realities of Singapore's fertility decline.
 
 
-## Dodged
+## Lower Level Dodged Plot
 Use this visualisation for detailed inspection of fertility and female population labour participation trends by age-bands.
 ```{r}
 # Load and clean data
@@ -757,6 +759,15 @@ filtered_dataset <- final_dataset |>
     fertility_rate  = as.numeric(as.character(fertility_rate)),
     uom             = ifelse(age_band == "All", "per female", "per thousand females")  # Adding the unit of measurement column
   )
+
+# Calculate the aggregated total count for each year, marital status, and labour status
+aggregated_data <- filtered_dataset |>
+  group_by(year, marital_status, labour_status) |>
+  summarise(total_count = sum(count, na.rm = TRUE), .groups = "drop")
+
+# Merge the aggregated total count with the original data
+filtered_dataset <- filtered_dataset |>
+  left_join(aggregated_data, by = c("year", "marital_status", "labour_status"))
 
 # SharedData for interactivity
 shared_data <- SharedData$new(filtered_dataset, group = "full_filter")
@@ -864,7 +875,7 @@ p <- ggplot() +
         "<br>Labour Status: ", labour_status,
         "<br>Age Band: ", age_band,  # Adding age band to the bars' tooltip
         "<br>Count: ", comma(count),
-        "<br>Total: ", comma(count)  # Removed total_count and just used count
+        "<br>Total: ", comma(total_count)  # Adding aggregated total count to the tooltip
       )
     ),
     position = position_dodge(width = 0.7),  # Keep the dodge position
@@ -993,14 +1004,14 @@ tagList(
 
 - **Extended Analysis**: Compared to the 2019–2023 analysis of the original, our visualisation expands the scope to **fertility rates from 1991 to 2022**.
 
-- **Socio-Economic Factors**: The original visualisation lacked explanatory power for Singapore’s fertility decline. Our dashboard introduces dimensions like **female population** allowing users to evaluate female **labour status**, and **marital status** to reveal potential **causal relationships** and enrich policy relevance.
+- **Socio-Economic Factors**: The original visualisation lacked explanatory power for Singapore’s fertility decline. This plot introduces dimensions like **female population** by age-bands allowing users to evaluate female **labour status**, and **marital status** to reveal potential **causal relationships** between these and fertility rates.
 
-- **Age-Banded Fertility**: Instead of a single flat fertility rate, we analyse age-banded fertility rates  for **age bands 15–49 in 5-year increments**. This highlights how fertility behaviour shifts across cohorts and identifies *which age groups contribute most* to the decline.
+- **Age-Banded Fertility**: Instead of a single total fertility rate, this allows the user to inspect age-banded fertility rates  for **age bands 15–49 in 5-year increments**. This highlights how fertility behaviour shifts across cohorts potentially unveiling the reasons behind Singapore's declining fertility rate.
 
 ---
 
-## test
-
+## Higher Level Dodged Plot
+Use this visualisation to inspect aggregated totals of female population and fertility rates that are not separated by age bands.
 ```{r}
 
 filtered_dataset <- final_dataset |>
@@ -1245,17 +1256,14 @@ tagList(
 )
 ```
 
-combined test
-```{r}
-```
-## Faceted
+**Summary of Improvements to weaknesses**
 
-**Interactive Dashboard**
-Built using the `ggiraph` library, enabling:
+- **Extended Analysis**: Compared to the 2019–2023 analysis of the original, our visualisation expands the scope to **fertility rates from 1991 to 2022**.
 
-- Zooming
-- Tooltip inspection
-- Lasso selection or on-click comparison
+- **Socio-Economic Factors**: This provides an alternative overall perspective into how marital and labour status of females in Singapore is affecting total fertility rates. This plot is meant to reduce visual clutter by removing the dimension of age-bands.
+
+## Faceted Dashboard
+Built using the `ggiraph` library instead. This dashboard is meant for comparisons of marital status of female populations in and out of labour as well as age-banded fertility rates by using the hovering tooltip, on-click highlighting and lasso selection.
 
 ```{r, echo=TRUE, fig.width=12, fig.height=8}
 # Compute agg_counts and filter out "All" age band
@@ -1408,11 +1416,9 @@ gir
 
 **Summary of Improvements:**
 
-- Color accessibility: Switched to Viridis palettes (scale_fill_viridis_d, scale_colour_viridis_d) for colorblind‐friendly visuals.
+- Unified selection IDs: Used a single data_id = paste0("year_", year) for both bars and lines, when clicking a year it highlights all elements for that year
 
-- Unified selection IDs: Used a single data_id = paste0("year_", year) for both bars and lines—clicking a year now highlights all elements for that year.
-
-- Faceting relevant dimensions (female population, labour status, fertility rates and year) to provide user dedicated inspection if desired
+- provides an alternative to the higher level dodged plot which allows user to inspect aggregated totals of female population in and out of labour force and uses age banded fertility rates and not total fertility rate.
 
 **Improved interactivity:**
 

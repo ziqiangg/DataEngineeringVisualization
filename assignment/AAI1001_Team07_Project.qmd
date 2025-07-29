@@ -848,7 +848,7 @@ col2_html_1 <- paste0(
 )
 
 combined_legend_1 <- sprintf('
-<div style="display: flex; width: 100%%; gap: 15px; margin-top: 20px; font-family: Arial, sans-serif;">
+<div style="display: flex; width: 100%%; gap: 15px; margin-top: 20px; font-family: Arial;">
   <div style="flex: 1; background-color: #f8f9fa; padding: 5px; border-radius: 5px; font-size: 12px;">
     <div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Marital Status</div>
     <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -878,7 +878,7 @@ combined_legend_1 <- sprintf('
 
 # Legend for Graph 2 (simpler since only "All" age band)
 combined_legend_2 <- '
-<div style="display: flex; width: 100%; gap: 15px; margin-top: 20px; font-family: Arial, sans-serif;">
+<div style="display: flex; width: 100%; gap: 15px; margin-top: 20px; font-family: Arial;">
   <div style="flex: 1; background-color: #f8f9fa; padding: 5px; border-radius: 5px; font-size: 12px;">
     <div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Marital Status</div>
     <div style="display: flex; flex-direction: column; gap: 6px;">

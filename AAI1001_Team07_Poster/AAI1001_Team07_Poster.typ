@@ -468,7 +468,7 @@ supplement: "Figure",
 
 + #strong[Extended analysis];: Increase the range of the data to 1991-2022, additional years will provide insight into long-term trends.
 
-+ #strong[Integrate socioeconomic factors];: Integrate socioeconomic factors such as labour force participation and marital status by age bands. This will provide a more holistic view of the factors influencing fertility rates, allowing for understanding of demographic breakdowns and trends.
++ #strong[Integrate socioeconomic factors];: Integrate socioeconomic factors such as labour force participation and marital status by age bands. This will provide a more holistic view of the factors influencing fertility rates, allowing for understanding of demographic breakdowns and trends
 
 + #strong[Dynamic visualisation];: Implement a fully interactive dashboard which allow users to interact with the data by hovering over data points to see more information or filtering via marital status, labour status & age-band dropdowns.
 
@@ -530,7 +530,7 @@ The datasets (in CSV format) used were from SingStat and data.gov.sg. They conta
 - Define Colors: Create a color palette representing the socioeconomic factors influencing fertility rates such as labour force participation and marital status.
 - Graph Properties: Configure interactivity by allowing user to click and zoom on the data points.
 - Layout: Set the title and overall layout properties for an informative and visually appealing graph.
-- Slider & Dropdowns: Allows for greater control on which years the graph should display
+- Slider & Dropdown: Allows for greater control on which years the graph should display
 
 = Improved Visualisation
 <improved-visualisation>
@@ -563,11 +563,11 @@ Our interactive visualisations reveal three critical insights into Singapore's f
 
 - #strong[Profile Saving];: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
 
-- #strong[Implementing Dual y-Axis];: Due to complexity and conflicts of packages (crosstalk & ggplotly), the plot does not display secondary y-axis for fertility rates which dynamically updates based on total or age-banded fertility rates (Births per Female vs Births per Thousand Women).
+- #strong[Implementing Dual y-Axes];: Due to complexity and conflicts of packages (crosstalk & ggplotly), the plot does not display secondary y-axis for fertility rates which dynamically updates based on total or age-banded fertility rates (Births per Female vs Births per Thousand Women).
 
 = Conclusion
 <conclusion>
-Singapore's fertility crisis is intricately tied to marriage trends, economic conditions, and changing female labour patterns. Our interactive visualisation highlights the dominant role of increased female labour force participation in driving the decline in fertility, particularly following the 1998 Asian Financial Crisis. As more women entered the workforce, fertility rates consistently dropped, with the most pronounced decline occurring in the 25-29 age group. The structural changes in family planning decisions, influenced by economic uncertainty and evolving social norms, have entrenched low fertility rates. To address this issue, policies should focus on supporting women to balance full-time careers with earlier childbearing, such as through affordable childcare and flexible work arrangements.
+Singapore's fertility crisis is intricately tied to marriage trends, economic conditions, and changing female labour patterns. Our interactive dashboard highlights the dominant role of increased female labour force participation in driving the decline in fertility, particularly following the 1998 Asian Financial Crisis. As more women entered the workforce, fertility rates consistently dropped, with the most pronounced decline occurring in the 25-29 age group. The structural changes in family planning decisions, influenced by economic uncertainty and evolving social norms, have entrenched low fertility rates. To address this issue, policies should focus on supporting women to balance full-time careers with earlier childbearing, such as through affordable childcare and flexible work arrangements.
 
 = References
 <references>

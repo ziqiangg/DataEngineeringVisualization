@@ -112,7 +112,7 @@ The datasets used here are from SingStat and data.gov.sg. The data is in the CSV
 
 # Improved Visualisation
 
-![Total fertility rate from 2019 to 2023](images/dodgedchart.png){#fig-1}
+![Age-banded fertility rates from 1991 to 2022](images/dodgedchart.png){#fig-1}
 
 
 # Insight

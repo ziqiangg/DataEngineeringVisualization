@@ -543,7 +543,7 @@ The datasets used here are from SingStat and data.gov.sg. The data is in the CSV
 ], caption: figure.caption(
 position: bottom, 
 [
-Total fertility rate from 2019 to 2023
+Age-banded fertility rates from 1991 to 2022
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 

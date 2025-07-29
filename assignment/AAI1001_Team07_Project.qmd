@@ -1110,7 +1110,7 @@ tagList(
   div(
     style = "margin-bottom:20px;",
     h3("Interactive Fertility & Labour Plot"),
-    p("Use filters to explore female labour force counts and fertility rates."),
+    p("Use filters to explore connections between female population, labour, marital status counts and fertility rates."),
     div(
       style = "margin-top: 10px;",
       tags$button(
@@ -1683,7 +1683,7 @@ Overall, all four tests reinforce our groups storyline which is: **rising female
 | Team Member | Tasks |
 | --- | --- |
 | Guo Zi Qiang Robin | Data Engineering, references, creation of dodged & faceted visualisation |
-| Chew Tze Han |  |
+| Chew Tze Han | Outlier Detection, creation & refinement of comprehensive dodged bar and line plot visualisation|
 | Cheong Wai Hong Jared | Supported the data visualisation, Statistical Analysis, Key Findings & Insights, Summary Statistics, Statistical Significance Testing |
 | Akram | |
 | Gregory Tan |  |

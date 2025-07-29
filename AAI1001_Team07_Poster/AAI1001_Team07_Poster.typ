@@ -388,7 +388,7 @@
    footer_text: [AAI1001 AY24/25 Tri 2 Team Project], 
 
   // Any URL, like a link to the conference website.
-   footer_url: [~], 
+   footer_url: [https:\/\/ziqiangg.github.io/aai1001project/], 
 
   // Emails of the authors.
    footer_email_ids: [Team 07], 
@@ -571,7 +571,14 @@ Our interactive visualizations reveal three critical insights into Singapore's f
 
 = References
 <references>
++ Data.gov.sg. (n.d.a). #emph[Data.gov.sg];. Retrieved from https:\/\/staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d\_e19478b30d8f5cd6a1dc482bf2e46eb7
 
++ Data.gov.sg. (n.d.b). #emph[Data.gov.sg];. Retrieved from https:\/\/staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d\_e2475676af29ec78749f1b22cf8b301c
 
++ Scribbr. (2025). #emph[Statistics];. Retrieved from https:\/\/www.scribbr.com/category/statistics/
 
++ Statistics, S. D. of. (n.d.). #emph[Population by age group, sex and type of locality, 2023 \[table M810091\]];. Retrieved from https:\/\/tablebuilder.singstat.gov.sg/table/TS/M810091
 
++ Tan, T. (2024a). #emph[Singapore's total fertility rate hits record low in 2023, falls below 1 for first time];. The Straits Times. Retrieved from https:\/\/www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time
+
++ Tan, T. (2024b). #emph[Why the fertility rate doesn't capture socio-economic or cultural trends];. The Straits Times. Retrieved from https:\/\/www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends

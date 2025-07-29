@@ -8,7 +8,7 @@ format:
     departments: "&nbsp;"
     institution-logo: "./images/sit.png"
     footer-text: "AAI1001 AY24/25 Tri 2 Team Project"
-    footer-url: "&nbsp;"
+    footer-url: "https://ziqiangg.github.io/aai1001project/"
     footer-emails: "Team 07"
     footer-color: "ebcfb2"
 ---
@@ -136,4 +136,14 @@ Our interactive visualizations reveal three critical insights into Singapore's f
 
 # References
 
+1. Data.gov.sg. (n.d.a). *Data.gov.sg*. Retrieved from https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e19478b30d8f5cd6a1dc482bf2e46eb7
 
+2. Data.gov.sg. (n.d.b). *Data.gov.sg*. Retrieved from https://staging.data.gov.sg/datasets?query=household&page=1&searchColumns=Year&resultId=d_e2475676af29ec78749f1b22cf8b301c
+
+3. Scribbr. (2025). *Statistics*. Retrieved from https://www.scribbr.com/category/statistics/
+
+4. Statistics, S. D. of. (n.d.). *Population by age group, sex and type of locality, 2023 [table M810091]*. Retrieved from https://tablebuilder.singstat.gov.sg/table/TS/M810091
+
+5. Tan, T. (2024a). *Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time*. The Straits Times. Retrieved from https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time
+
+6. Tan, T. (2024b). *Why the fertility rate doesn’t capture socio-economic or cultural trends*. The Straits Times. Retrieved from https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends

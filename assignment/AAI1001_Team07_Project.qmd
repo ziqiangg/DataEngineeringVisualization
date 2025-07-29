@@ -1302,7 +1302,8 @@ tooltip_df <- agg_counts |>
       in_LF  = "labour_force",
       out_LF = "outside_labour_force"
     )
-  )
+  ) |>
+  filter(!is.na(marital_status))  # Ensure that NA is excluded
 
 
 # Compute fertility_ab & give each point 'all' bar_ids for its year
@@ -1342,7 +1343,7 @@ bar_plot <- ggplot(tooltip_df) +
     alpha    = 0.8
   ) +
   scale_y_continuous(name="Female Population (thousands)", labels=comma) +
-  scale_fill_brewer(palette="Set1", name="Marital Status") +
+  scale_fill_brewer(palette="Set1", name="Marital Status", na.translate = FALSE) +  # Exclude NA from the legend
   facet_wrap(~ labour_status, ncol=1,
              labeller = labeller(
                labour_status = c(
@@ -1352,7 +1353,20 @@ bar_plot <- ggplot(tooltip_df) +
              )) +
   theme_minimal(base_size=10) +
   theme(legend.position="bottom",
-        strip.text=element_text(face="bold", size=12))
+        strip.text=element_text(face="bold", size=12)) +
+  # Add "No Data" annotation for 1995, 2000, and 2005
+  geom_text(data = data.frame(
+    year = c(1995, 2000, 2005),
+    count = 0,
+    marital_status = "No Data",  # Dummy for annotation
+    label = "No Data"
+  ), aes(x = year, y = count, label = label),
+    angle = 90,  # Vertical text
+    vjust = 0,  # Adjust text position
+    nudge_y = 80, # up abit
+    size = 3, color = "black", fontface = "bold"
+  )
+
 
 # Build fertility_rate line plot (no scaling factor applied to fertility_rate)
 line_plot <- ggplot(fertility_ab) +
@@ -1410,7 +1424,6 @@ gir <- girafe(
 )
 
 gir
-
 ```
 
 
@@ -1703,7 +1716,7 @@ gt(test_results)
 - A *very strong inverse linear association* between female labour-force-participation rate (LFPR) and total fertility rate (TFR). As women’s **LFPR rises, TFR falls** almost in lock-step.
 
 **LM Slope**
-- From the simple regression TFR ~ LFPR. A one-unit (i.e., 100 percentage-point) rise in LFPR would predict a 3.447 drop in TFR; scaled more realistically, each 10 pp rise in LFPR ↘ TFR by about 0.345. The slope is *highly significant*, confirming that LFPR is a strong linear predictor of fertility.
+- From the simple regression TFR ~ LFPR. A one-unit (i.e., 100 percentage-point) rise in LFPR would predict a 3.447 drop in TFR; scaled more realistically, each 10 pp rise in LFPR decreases TFR by about 0.345. The slope is *highly significant*, confirming that LFPR is a strong linear predictor of fertility.
 
 **Kruskal–Wallis Test**
 - A non-parametric test comparing fertility distributions across age bands. The enormous H statistic and vanishingly small p-value tell us the age groups do not share a common median fertility rate—fertility behaviour differs sharply by age band.

@@ -435,7 +435,7 @@
 
 = Introduction
 <introduction>
-Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses #strong[three decades of fertility and labour force data] to identify patterns and relationships that visualisations from the source neglects. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from different websites.
+Singapore faces a demographic crisis with one of the world's lowest fertility rates. Understanding the underlying socioeconomic factors is crucial for policy formulation and national planning. This project analyses #strong[three decades of fertility and labour force data] to identify patterns and relationships that visualisations from the source neglects. Using various packages in R, we will create a poster that thoughtfully displays the socioeconomic factors that influence fertility/birth rates in Singapore by using fertility rate data sourced from data.gov.sg & SingStat.
 
 = Original Visualisation
 <original-visualisation>
@@ -444,7 +444,7 @@ Singapore faces a demographic crisis with one of the world's lowest fertility ra
 ], caption: figure.caption(
 position: bottom, 
 [
-Total fertility rate from 2019 to 2023
+Total fertility rate from 2019 to 2023, published by the Straits Times #emph["Singapore's total fertility rate hits record low in 2023, falls below 1 for first time"]
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -456,27 +456,27 @@ supplement: "Figure",
 <original-visualisation-analysis>
 + #strong[No data validation];: There is no data validation provided in the graph.
 
-+ #strong[Limited range];: The graph only displays data from 2019-2023. This is not a wide enough range to make conclusive statements.
++ #strong[Limited range];: The graph only displays data from 2019-2023 which is not wide enough range to make conclusive statements.
 
-+ #strong[Missing socioeconomic factors];: There are no socioeconomic factors listed to support the decline in the fertility rate. They are crucial information that can reinforce the nature of the graph.
++ #strong[Missing socioeconomic factors];: Lack of supporting socioeconomic factors which may be crucial in identifying intangible influences in declining fertility rates.
 
-+ #strong[Static visualisation];: The original visualisation lacks depth and interactive features that would otherwise allow the user to better understand the graphs. The static nature does not allow the user to hover or click on data points to gain more information.
++ #strong[Static visualisation];: The original static visualisation lacks depth and interactive features that would aid the user in deriving insights.
 
 = Suggested Improvements
 <suggested-improvements>
-+ #strong[Include data validation];: Add comprehensive data validation along with outlier analysis. This aims to ensure the accuracy and reliability of the data presented.
++ #strong[Include data validation];: Add comprehensive data validation & outlier analysis to ensure the accuracy and reliability of the data presented.
 
-+ #strong[Extended analysis];: Increase the range of the data to 1991-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
++ #strong[Extended analysis];: Increase the range of the data to 1991-2022, additional years will provide insight into long-term trends.
 
-+ #strong[Integrate socioeconomic factors];: Integrate socioeconomic factors such as labour force participation and marital status. This will provide a more holistic view of the factors influencing fertility rates. This allows for better policy formulation and understanding of the demographic trends.
++ #strong[Integrate socioeconomic factors];: Integrate socioeconomic factors such as labour force participation and marital status by age bands. This will provide a more holistic view of the factors influencing fertility rates, allowing for understanding of demographic breakdowns and trends.
 
-+ #strong[Dynamic visualisation];: Ensure that the visualisation consists of a fully interactive dashboard. This will allow users to interact with the data, such as hovering over data points to see more information. They can also filter by different socioeconomic factors and viewing age-specific fertility rates. This enhances user engagement and understanding of the data.
++ #strong[Dynamic visualisation];: Implement a fully interactive dashboard which allow users to interact with the data by hovering over data points to see more information or filtering via marital status, labour status & age-band dropdowns.
 
 = Implementation
 <implementation>
 == Data Sources
 <data-sources>
-The datasets used here are from SingStat and data.gov.sg. The data is in the CSV format. They contain information about fertility rates, labour force participation and marital status in Singapore.
+The datasets (in CSV format) used were from SingStat and data.gov.sg. They contain information about fertility rates, labour force participation and marital status broken down by age-bands in Singapore.
 
 == Software
 <software>
@@ -530,7 +530,7 @@ The datasets used here are from SingStat and data.gov.sg. The data is in the CSV
 - Define Colors: Create a color palette representing the socioeconomic factors influencing fertility rates such as labour force participation and marital status.
 - Graph Properties: Configure interactivity by allowing user to click and zoom on the data points.
 - Layout: Set the title and overall layout properties for an informative and visually appealing graph.
-- Slider: Allows for greater control on which years the graph should display
+- Slider & Dropdowns: Allows for greater control on which years the graph should display
 
 = Improved Visualisation
 <improved-visualisation>
@@ -563,11 +563,11 @@ Our interactive visualisations reveal three critical insights into Singapore's f
 
 - #strong[Profile Saving];: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
 
-- #strong[Combining stacking and dodging];: Implementing a nested stacked and dodged bar chart. Combining both stacking and dodging within a single plot is provides for insightful visualisation.
+- #strong[Implementing Dual y-Axis];: Due to complexity and conflicts of packages (crosstalk & ggplotly), the plot does not display secondary y-axis for fertility rates which dynamically updates based on total or age-banded fertility rates (Births per Female vs Births per Thousand Women).
 
 = Conclusion
 <conclusion>
-Singapore's fertility crisis is intricately tied to marriage trends, economic conditions, and changing female labour patterns. Our interactive dashboard provides policymakers and the public with deeper insights that traditional static charts cannot offer. Which enables more informed decision-making for demographic sustainability.
+Singapore's fertility crisis is intricately tied to marriage trends, economic conditions, and changing female labour patterns. Our interactive visualisation highlights the dominant role of increased female labour force participation in driving the decline in fertility, particularly following the 1998 Asian Financial Crisis. As more women entered the workforce, fertility rates consistently dropped, with the most pronounced decline occurring in the 25-29 age group. The structural changes in family planning decisions, influenced by economic uncertainty and evolving social norms, have entrenched low fertility rates. To address this issue, policies should focus on supporting women to balance full-time careers with earlier childbearing, such as through affordable childcare and flexible work arrangements.
 
 = References
 <references>

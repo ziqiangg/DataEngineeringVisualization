@@ -213,7 +213,7 @@
   num_columns: "3",
 
   // University logo's scale (in %).
-  univ_logo_scale: "60",
+  univ_logo_scale: "30",
 
   // University logo's column size (in in).
   univ_logo_column_size: "10",
@@ -237,7 +237,7 @@
   body
 ) = {
   // Set the body font.
-  set text(font: "Libertinus Serif", size: 16pt)
+  set text(font: "Libertinus Serif", size: 15pt)
   let sizes = size.split("x")
   let width = int(sizes.at(0)) * 1in
   let height = int(sizes.at(1)) * 1in
@@ -301,13 +301,13 @@
       #set align(center)
       #set text({ 32pt })
       #show: smallcaps
-      #v(50pt, weak: true)
+      #v(20pt, weak: true)
       #if it.numbering != none {
         numbering("I.", deepest)
         h(7pt, weak: true)
       }
       #it.body
-      #v(35.75pt, weak: true)
+      #v(20pt, weak: true)
       #line(length: 100%)
     ] else if it.level == 2 [
       // Second-level headings are run-ins.
@@ -487,17 +487,13 @@ The datasets used here are from SingStat and data.gov.sg. The data is in the CSV
 - `ggrepel` -- Prevents overlapping text labels in `ggplot2` plots
 - `RColorBrewer` -- Offers pre-made color palettes for maps and plots
 - `htmltools` -- Tools for creating and customizing HTML content in R
-- `dplyr` -- Grammar of data manipulation
 - `knitr` -- For dynamic report generation
 - `tools` -- Base R utilities for package and file management
 - `ggiraph` -- Adds tooltips and interactivity to `ggplot2` plots
-- `ggplot2` -- Core package for creating elegant plots
 - `plotly` -- Converts static plots to interactive plots
 - `janitor` -- Cleans messy data
 - `gt` -- Creates beautiful tables for reporting
-- `stringr` -- Simplifies string operations
 - `scales` -- Formatting scales and labels in visualisations
-- `forcats` -- Handles categorical variables more easily
 - `DT` -- R interface to interactive DataTables (tables with filters/sorting).
 - `glue` -- Embeds R expressions in strings using `{}`
 

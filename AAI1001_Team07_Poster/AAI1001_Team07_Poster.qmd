@@ -60,17 +60,13 @@ The datasets used here are from SingStat and data.gov.sg. The data is in the CSV
 - `ggrepel` – Prevents overlapping text labels in `ggplot2` plots
 - `RColorBrewer` – Offers pre-made color palettes for maps and plots
 - `htmltools` – Tools for creating and customizing HTML content in R
-- `dplyr` – Grammar of data manipulation
 - `knitr` – For dynamic report generation
 - `tools` – Base R utilities for package and file management
 - `ggiraph` – Adds tooltips and interactivity to `ggplot2` plots
-- `ggplot2` – Core package for creating elegant plots
 - `plotly` – Converts static plots to interactive plots
 - `janitor` – Cleans messy data
 - `gt` – Creates beautiful tables for reporting
-- `stringr` – Simplifies string operations
 - `scales` – Formatting scales and labels in visualisations
-- `forcats` – Handles categorical variables more easily
 - `DT` – R interface to interactive DataTables (tables with filters/sorting).
 - `glue` – Embeds R expressions in strings using `{}`
 

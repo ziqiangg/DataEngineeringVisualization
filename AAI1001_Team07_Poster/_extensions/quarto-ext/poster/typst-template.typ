@@ -42,7 +42,7 @@
   num_columns: "3",
 
   // University logo's scale (in %).
-  univ_logo_scale: "60",
+  univ_logo_scale: "30",
 
   // University logo's column size (in in).
   univ_logo_column_size: "10",
@@ -66,7 +66,7 @@
   body
 ) = {
   // Set the body font.
-  set text(font: "Libertinus Serif", size: 16pt)
+  set text(font: "Libertinus Serif", size: 15pt)
   let sizes = size.split("x")
   let width = int(sizes.at(0)) * 1in
   let height = int(sizes.at(1)) * 1in
@@ -130,13 +130,13 @@
       #set align(center)
       #set text({ 32pt })
       #show: smallcaps
-      #v(50pt, weak: true)
+      #v(20pt, weak: true)
       #if it.numbering != none {
         numbering("I.", deepest)
         h(7pt, weak: true)
       }
       #it.body
-      #v(35.75pt, weak: true)
+      #v(20pt, weak: true)
       #line(length: 100%)
     ] else if it.level == 2 [
       // Second-level headings are run-ins.

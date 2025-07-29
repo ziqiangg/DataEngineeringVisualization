@@ -4,7 +4,7 @@ author:
   - name: Guo Zi Qiang Robin
   - name: Chew Tze Han
   - name: Cheong Wai Hong Jared
-  - name: Akram
+  - name: Mohaamed Akram
   - name: Gregory Tan
 
 format:

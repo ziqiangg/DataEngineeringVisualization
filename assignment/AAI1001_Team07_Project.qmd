@@ -5,7 +5,7 @@ author:
   - name: Guo Zi Qiang Robin
   - name: Chew Tze Han
   - name: Cheong Wai Hong Jared
-  - name: Akram
+  - name: Mohaamed Akram
   - name: Gregory Tan
 date: today
 format:
@@ -1685,5 +1685,5 @@ Overall, all four tests reinforce our groups storyline which is: **rising female
 | Guo Zi Qiang Robin | Data Engineering, references, creation of dodged & faceted visualisation |
 | Chew Tze Han | Outlier Detection, creation & refinement of comprehensive dodged bar and line plot visualisation|
 | Cheong Wai Hong Jared | Supported the data visualisation, Statistical Analysis, Key Findings & Insights, Summary Statistics, Statistical Significance Testing |
-| Akram | Poster formatting & styling, Presenting to the Instructor |
+| Mohaamed Akram | Data exploration, Poster refinement & styling, Presenting to the Instructor |
 | Gregory Tan | Refine the Following Sections: Executive Summary, Introduction, Critical Analysis of Original Visualisation, Data Sources & Methodology, Data Quality Assessment, Data Integration & Final Dataset, Creation & Formatting of Poster |

@@ -1686,4 +1686,4 @@ Overall, all four tests reinforce our groups storyline which is: **rising female
 | Chew Tze Han |  |
 | Cheong Wai Hong Jared | Supported the data visualisation, Statistical Analysis, Key Findings & Insights, Summary Statistics, Statistical Significance Testing |
 | Akram | |
-| Gregory Tan |  |
+| Gregory Tan | Refine the Following Sections: Executive Summary, Introduction, Critical Analysis of Original Visualisation, Data Sources & Methodology, Data Quality Assessment, Data Integration & Final Dataset, Creation & Formatting of Poster |

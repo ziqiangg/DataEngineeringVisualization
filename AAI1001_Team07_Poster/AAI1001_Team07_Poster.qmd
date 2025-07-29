@@ -145,3 +145,11 @@ Singapore's fertility crisis is intricately tied to marriage trends, economic co
 5. Tan, T. (2024a). *Singapore’s total fertility rate hits record low in 2023, falls below 1 for first time*. The Straits Times. Retrieved from https://www.straitstimes.com/singapore/politics/singapore-s-total-fertility-rate-hits-record-low-in-2023-falls-below-1-for-first-time
 
 6. Tan, T. (2024b). *Why the fertility rate doesn’t capture socio-economic or cultural trends*. The Straits Times. Retrieved from https://www.straitstimes.com/singapore/why-the-fertility-rate-doesn-t-capture-socio-economic-or-cultural-trends
+
+---------
+
+![Scan to View Interactive Plot](images/aai1001_qr.png){fig.cap="scan me" fig.align="center" out.width="50%" fig.show="hold"}
+
+
+
+ 

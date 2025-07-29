@@ -301,7 +301,7 @@
       #set align(center)
       #set text({ 32pt })
       #show: smallcaps
-      #v(20pt, weak: true)
+      #v(30pt, weak: true)
       #if it.numbering != none {
         numbering("I.", deepest)
         h(7pt, weak: true)
@@ -456,15 +456,15 @@ supplement: "Figure",
 <original-visualisation-analysis>
 + #strong[No data validation];: There is no data validation provided in the graph.
 
-+ #strong[Limited range];: The graph only displays data from 2019-2023. This is not a wide enough of a range to make conclusive statements.
++ #strong[Limited range];: The graph only displays data from 2019-2023. This is not a wide enough range to make conclusive statements.
 
 + #strong[Missing socioeconomic factors];: There are no socioeconomic factors listed to support the decline in the fertility rate. They are crucial information that can reinforce the nature of the graph.
 
-+ #strong[Static visualisation];: The original visualisation lacks depth and interactive features that would otherwise allow the user to better understand the graphs. The static natures does not allow the user to hover or click on data points to gain more information.
++ #strong[Static visualisation];: The original visualisation lacks depth and interactive features that would otherwise allow the user to better understand the graphs. The static nature does not allow the user to hover or click on data points to gain more information.
 
 = Suggested Improvements
 <suggested-improvements>
-+ #strong[Inlcude data validation];: Add comprehensive data validation along with outlier analysis. This aims to ensure the accuracy and reliability of the data presented.
++ #strong[Include data validation];: Add comprehensive data validation along with outlier analysis. This aims to ensure the accuracy and reliability of the data presented.
 
 + #strong[Extended analysis];: Increase the range of the data to 1991-2022. This will provide a more comprehensive view of the fertility trends in Singapore which allows for better analysis and understanding of long-term patterns.
 
@@ -476,7 +476,7 @@ supplement: "Figure",
 <implementation>
 == Data Sources
 <data-sources>
-The datasets used here are from SingStat and data.gov.sg. The data is in the CSV format. They contain information abour fertility rates, labour force participation and marital status in Singapore.
+The datasets used here are from SingStat and data.gov.sg. The data is in the CSV format. They contain information about fertility rates, labour force participation and marital status in Singapore.
 
 == Software
 <software>
@@ -486,7 +486,7 @@ The datasets used here are from SingStat and data.gov.sg. The data is in the CSV
 - `ggpp` -- Adds plot annotations like equations and labels in `ggplot2`
 - `ggrepel` -- Prevents overlapping text labels in `ggplot2` plots
 - `RColorBrewer` -- Offers pre-made color palettes for maps and plots
-- `htmltools` -- Tools for creating and customizing HTML content in R
+- `htmltools` -- Tools for creating and customising HTML content in R
 - `knitr` -- For dynamic report generation
 - `tools` -- Base R utilities for package and file management
 - `ggiraph` -- Adds tooltips and interactivity to `ggplot2` plots
@@ -549,21 +549,25 @@ supplement: "Figure",
 
 = Insight
 <insight>
-Our interactive visualizations reveal three critical insights into Singapore's fertility crisis:
+Our interactive visualisations reveal three critical insights into Singapore's fertility crisis:
 
 - #strong[The Career-Family Tradeoff];: The strongest inverse correlation (-0.87) exists between female workforce participation and fertility rates. As women's labor participation increased 89% (1991-2020), fertility declined 41%. This tension is most acute at ages 25-34 - peak career-building years that overlap with prime childbearing age.
 
-- #strong[The Marriage Barrier];: Marriage remains the primary pathway to parenthood, with unmarried women contributing \<5% of births. Our visualization shows tripled singlehood rates among 30-39 year olds since 1991, creating a "marriage squeeze" that accounts for \~65% of fertility decline.
+- #strong[The Marriage Barrier];: Marriage remains the primary pathway to parenthood, with unmarried women contributing \<5% of births. Our visualisation shows tripled singlehood rates among 30-39 year olds since 1991, creating a "marriage squeeze" that accounts for \~65% of fertility decline.
 
 - #strong[Economic Shock Impact];: Statistical breakpoint analysis confirms 1998 (Asian Financial Crisis) and 2008 (Global Financial Crisis) as inflection points where fertility declines accelerated by 30-45% compared to pre-crisis trends, showing how economic uncertainty triggers permanent family formation delays.
 
 = Further Improvements
 <further-improvements>
-- #strong[Rate Comparison Tool];: Ability to compare two years to display delta percentages (e.g., "2008 vs 2022: 25-29 fertility ↓38%") directly on the visualization.
+- #strong[Rate Comparison Tool];: Ability to compare two years to display delta percentages (e.g., "2008 vs 2022: 25-29 fertility ↓38%") directly on the visualisation.
 
 - #strong[Profile Saving];: Allow bookmarking custom views (e.g., "Single women 30-34") for easy direct comparison between different groups or periods of data during analysis sessions.
 
 - #strong[Combining stacking and dodging];: Implementing a nested stacked and dodged bar chart. Combining both stacking and dodging within a single plot is provides for insightful visualisation.
+
+= Conclusion
+<conclusion>
+Singapore's fertility crisis is intricately tied to marriage trends, economic conditions, and changing female labour patterns. Our interactive dashboard provides policymakers and the public with deeper insights that traditional static charts cannot offer. Which enables more informed decision-making for demographic sustainability.
 
 = References
 <references>

@@ -130,7 +130,7 @@
       #set align(center)
       #set text({ 32pt })
       #show: smallcaps
-      #v(20pt, weak: true)
+      #v(30pt, weak: true)
       #if it.numbering != none {
         numbering("I.", deepest)
         h(7pt, weak: true)
